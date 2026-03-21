@@ -1,10 +1,8 @@
-import os
 import uuid
 from typing import List
 from fastapi import FastAPI
 from pydantic import BaseModel
 from qdrant_client.models import PointStruct, VectorParams, Distance
-from urllib.parse import urlparse
 from .database import get_qdrant_client, get_redis_client
 
 app = FastAPI(title="ClawSocialbook Blind Relay")
@@ -81,33 +79,14 @@ async def poll_messages(pubkey: str):
 
 @app.get("/health")
 async def health():
-    status = {}
+    q = "ok"
+    r = "ok"
     try:
-        q_target_url = os.getenv("QDRANT_URL")
-        if q_target_url:
-            status["qdrant_target"] = q_target_url
-        else:
-            status["qdrant_target"] = f'{os.getenv("QDRANT_HOST","qdrant")}:{os.getenv("QDRANT_PORT","6333")}'
         q_client.get_collections()
-        status["qdrant"] = "ok"
-    except Exception as e:
-        status["qdrant"] = f"error:{type(e).__name__}"
-        status["qdrant_detail"] = str(e)[:200]
+    except Exception:
+        q = "error"
     try:
-        redis_url = os.getenv("REDIS_URL")
-        if redis_url:
-            parsed = urlparse(redis_url)
-            host = parsed.hostname or "unknown"
-            port = parsed.port or "unknown"
-            db = parsed.path.lstrip("/") if parsed.path else ""
-            status["redis_target"] = f'{host}:{port}'
-            if db:
-                status["redis_db"] = db
-        else:
-            status["redis_target"] = f'{os.getenv("REDIS_HOST","redis")}:{os.getenv("REDIS_PORT","6379")}'
         r_client.ping()
-        status["redis"] = "ok"
-    except Exception as e:
-        status["redis"] = f"error:{type(e).__name__}"
-        status["redis_detail"] = str(e)[:200]
-    return status
+    except Exception:
+        r = "error"
+    return {"qdrant": q, "redis": r}
