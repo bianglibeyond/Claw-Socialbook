@@ -10,7 +10,6 @@ from .database import get_qdrant_client, get_redis_client
 app = FastAPI(title="ClawSocialbook Blind Relay")
 
 # --- Infrastructure Connections ---
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 q_client = get_qdrant_client()
 r_client = get_redis_client()
