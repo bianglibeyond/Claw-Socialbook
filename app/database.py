@@ -6,7 +6,7 @@ import redis
 
 def get_qdrant_client():
     url = os.getenv("QDRANT_URL")
-    host = os.getenv("QDRANT_HOST", "localhost")
+    host = os.getenv("QDRANT_HOST", "qdrant")
     port = int(os.getenv("QDRANT_PORT", "6333"))
     api_key = os.getenv("QDRANT_API_KEY")
     if url:
@@ -29,7 +29,7 @@ def get_redis_client():
     url = os.getenv("REDIS_URL")
     if url:
         return redis.from_url(url, decode_responses=True)
-    host = os.getenv("REDIS_HOST", "localhost")
+    host = os.getenv("REDIS_HOST", "redis")
     port = int(os.getenv("REDIS_PORT", "6379"))
     password = os.getenv("REDIS_PASSWORD")
     db = int(os.getenv("REDIS_DB", "0"))
