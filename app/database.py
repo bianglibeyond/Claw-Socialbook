@@ -26,6 +26,9 @@ def ensure_collections(client: QdrantClient):
             client.create_collection(collection_name=name, vectors_config=vectors)
 
 def get_redis_client():
+    url = os.getenv("REDIS_URL")
+    if url:
+        return redis.from_url(url, decode_responses=True)
     host = os.getenv("REDIS_HOST", "localhost")
     port = int(os.getenv("REDIS_PORT", "6379"))
     password = os.getenv("REDIS_PASSWORD")
