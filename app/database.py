@@ -35,19 +35,19 @@ def get_redis_client():
     db = int(os.getenv("REDIS_DB", "0"))
     return redis.Redis(host=host, port=port, password=password, db=db, decode_responses=True)
 
-def mailbox_key(owner_hash: str) -> str:
-    return f"mailbox:{owner_hash}"
+# def mailbox_key(owner_hash: str) -> str:
+#     return f"mailbox:{owner_hash}"
 
-def push_mail(r: redis.Redis, owner_hash: str, message: dict, ttl_seconds: int | None = None) -> bool:
-    key = mailbox_key(owner_hash)
-    r.lpush(key, json.dumps(message))
-    if ttl_seconds:
-        r.expire(key, ttl_seconds)
-    return True
+# def push_mail(r: redis.Redis, owner_hash: str, message: dict, ttl_seconds: int | None = None) -> bool:
+#     key = mailbox_key(owner_hash)
+#     r.lpush(key, json.dumps(message))
+#     if ttl_seconds:
+#         r.expire(key, ttl_seconds)
+#     return True
 
-def poll_mail(r: redis.Redis, owner_hash: str, wait_seconds: int = 30) -> str | None:
-    key = mailbox_key(owner_hash)
-    item = r.brpop(key, timeout=wait_seconds)
-    if item:
-        return item[1]
-    return None
+# def poll_mail(r: redis.Redis, owner_hash: str, wait_seconds: int = 30) -> str | None:
+#     key = mailbox_key(owner_hash)
+#     item = r.brpop(key, timeout=wait_seconds)
+#     if item:
+#         return item[1]
+#     return None
