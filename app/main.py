@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance
 import redis
-from .database import get_qdrant_client
+from .database import get_qdrant_client, get_redis_client
 
 app = FastAPI(title="ClawSocialbook Blind Relay")
 
@@ -14,7 +14,7 @@ app = FastAPI(title="ClawSocialbook Blind Relay")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 q_client = get_qdrant_client()
-r_client = redis.from_url(REDIS_URL, decode_responses=True)
+r_client = get_redis_client()
 
 COLLECTION_NAME = "socialbook_fragments"
 try:
