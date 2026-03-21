@@ -1,8 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Literal, Field
 from fastapi import FastAPI
-from pydantic import BaseModel
 from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue
 from .database import get_qdrant_client, get_redis_client
 from .schemas import FragmentPublishRequest, FragmentPublishResponse, Fragment
