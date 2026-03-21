@@ -1,10 +1,11 @@
 import uuid
+from datetime import datetime
 from typing import List, Literal, Field
 from fastapi import FastAPI
 from pydantic import BaseModel
 from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue
 from .database import get_qdrant_client, get_redis_client
-from .schemas import FragmentPublishRequest, FragmentPublishResponse
+from .schemas import FragmentPublishRequest, FragmentPublishResponse, Fragment
 
 app = FastAPI(title="ClawSocialbook Blind Relay")
 
@@ -29,47 +30,66 @@ except Exception:
 
 @app.post("/publish", response_model=FragmentPublishResponse)
 async def publish(fragment: FragmentPublishRequest):
-    point_id = str(uuid.uuid4())
+    fragment_model = Fragment(
+        protocol_version=fragment.protocol_version,
+        fragment_id=uuid.uuid4(),
+        vector=fragment.vector,
+        hint=fragment.hint,
+        fragment_type=fragment.fragment_type,
+        match_threshold=fragment.match_threshold,
+        ephemeral_pubkey=fragment.ephemeral_pubkey,
+        social_apps=fragment.social_apps,
+        languages=fragment.languages,
+        region=fragment.region,
+        creation_time=datetime.now(datetime.UTC),
+        ttl_hours=24,
+        did_match_history=[],
+        non_match_history=[],
+    )
+    hits = q_client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=fragment_model.vector,
+        limit=5,
+    )
+    point_id = str(fragment_model.fragment_id)
     q_client.upsert(
         collection_name=COLLECTION_NAME,
         points=[
             PointStruct(
                 id=point_id,
-                vector=fragment.vector,
+                vector=fragment_model.vector,
                 payload={
-                    "initiator_ephemeral_pubkey": fragment.initiator_ephemeral_pubkey,
-                    "response_ephemeral_pubkey": fragment.response_ephemeral_pubkey,
-                    "type": fragment.fragment_type,
-                    "languages": [lang.value for lang in fragment.languages],
-                    "social_apps": [app.value for app in fragment.social_apps],
-                    "region": list(fragment.region),
+                    "protocol_version": fragment_model.protocol_version.value,
+                    "hint": fragment_model.hint,
+                    "fragment_type": fragment_model.fragment_type.value,
+                    "match_threshold": fragment_model.match_threshold,
+                    "ephemeral_pubkey": fragment_model.ephemeral_pubkey,
+                    "languages": [lang.value for lang in fragment_model.languages],
+                    "social_apps": [app.value for app in fragment_model.social_apps],
+                    "region": list(fragment_model.region),
+                    "creation_time": fragment_model.creation_time,
+                    "ttl_hours": fragment_model.ttl_hours,
+                    "did_match_history": [],
+                    "non_match_history": [],
                 },
             )
         ],
     )
-    hits = q_client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=fragment.vector,
-        query_filter=Filter(
-            must_not=[
-                FieldCondition(
-                    key="initiator_ephemeral_pubkey",
-                    match=MatchValue(value=fragment.initiator_ephemeral_pubkey),
-                )
-            ]
-        ),
-        limit=5,
-    )
     matches = [
         {
-            "fragment_id": uuid.UUID(str(h.id)),
+            "initiator_fragment_id": fragment_model.fragment_id,
+            "response_fragment_id": uuid.UUID(str(h.id)),
+            "initiator_ephemeral_pubkey": fragment_model.ephemeral_pubkey,
+            "response_ephemeral_pubkey": h.payload.get("ephemeral_pubkey"),
             "score": h.score,
-            "initiator_ephemeral_pubkey": h.payload.get("initiator_ephemeral_pubkey"),
         }
         for h in hits
-        if str(h.id) != point_id
-    ][:]
-    return {"fragment_id": uuid.UUID(point_id), "hint": fragment.hint, "matches": matches}
+    ][:5]
+    return {
+        "fragment_id": uuid.UUID(point_id),
+        "hint": fragment_model.hint,
+        "matches": matches,
+    }
 
 # @app.post("/mailbox/send")
 # async def send_message(msg: Handshake):
