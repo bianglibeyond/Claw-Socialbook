@@ -2,3 +2,4 @@ fastapi
 uvicorn
 qdrant-client
 redis
+pycountry

@@ -1,9 +1,10 @@
 import uuid
-from typing import List
+from typing import List, Literal, Field
 from fastapi import FastAPI
 from pydantic import BaseModel
 from qdrant_client.models import PointStruct, VectorParams, Distance
 from .database import get_qdrant_client, get_redis_client
+from .schemas import FragmentPublishRequest, FragmentPublishResponse
 
 app = FastAPI(title="ClawSocialbook Blind Relay")
 
@@ -24,20 +25,10 @@ except Exception:
     except Exception:
         pass
 
-# --- Schemas ---
-class Fragment(BaseModel):
-    vector: List[float]
-    pubkey: str # The agent's X25519 public key
-    type: str   # SELF, STUCK, or INTENT
-
-class Handshake(BaseModel):
-    to_pubkey: str
-    encrypted_payload: str
-
 # --- Endpoints ---
 
 @app.post("/publish")
-async def publish(fragment: Fragment):
+async def publish(fragment: FragmentPublishRequest):
     point_id = str(uuid.uuid4())
     q_client.upsert(
         collection_name=COLLECTION_NAME,
@@ -45,7 +36,13 @@ async def publish(fragment: Fragment):
             PointStruct(
                 id=point_id,
                 vector=fragment.vector,
-                payload={"pubkey": fragment.pubkey, "type": fragment.type}
+                payload={
+                    "pubkey": fragment.ephemeral_pubkey, 
+                    "type": fragment.fragment_type,
+                    "country": fragment.country,
+                    "city": fragment.city,
+                    "languages": [lang.value for lang in fragment.languages]
+                }
             )
         ]
     )
@@ -56,7 +53,7 @@ async def publish(fragment: Fragment):
         limit=4 # 4 because it will find itself
     )
     # Filter out self and return potential peer pubkeys
-    matches = [hit.payload["pubkey"] for hit in hits if hit.payload["pubkey"] != fragment.pubkey]
+    matches = [hit.payload["pubkey"] for hit in hits if hit.payload["pubkey"] != fragment.ephemeral_pubkey]
     return {"status": "published", "matches": matches}
 
 @app.post("/mailbox/send")
