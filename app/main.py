@@ -4,28 +4,29 @@ from typing import List, Optional
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import PointStruct, VectorParams, Distance
+from qdrant_client.models import PointStruct, VectorParams, Distance
 import redis
+from .database import get_qdrant_client
 
 app = FastAPI(title="ClawSocialbook Blind Relay")
 
 # --- Infrastructure Connections ---
-# Railway automatically provides these environment variables if you link the services
-QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
-q_client = QdrantClient(url=QDRANT_URL)
+q_client = get_qdrant_client()
 r_client = redis.from_url(REDIS_URL, decode_responses=True)
 
-# Ensure Collection Exists (768 dimensions for Gemini)
 COLLECTION_NAME = "socialbook_fragments"
 try:
     q_client.get_collection(COLLECTION_NAME)
-except:
-    q_client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=768, distance=Distance.COSINE),
-    )
+except Exception:
+    try:
+        q_client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=3072, distance=Distance.COSINE),
+        )
+    except Exception:
+        pass
 
 # --- Schemas ---
 class Fragment(BaseModel):
@@ -79,3 +80,18 @@ async def poll_messages(pubkey: str):
         if not m: break
         messages.append(m)
     return {"messages": messages}
+
+@app.get("/health")
+async def health():
+    status = {}
+    try:
+        q_client.get_collection(COLLECTION_NAME)
+        status["qdrant"] = "ok"
+    except Exception as e:
+        status["qdrant"] = f"error:{type(e).__name__}"
+    try:
+        r_client.ping()
+        status["redis"] = "ok"
+    except Exception as e:
+        status["redis"] = f"error:{type(e).__name__}"
+    return status
