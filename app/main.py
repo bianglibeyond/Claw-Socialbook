@@ -44,7 +44,7 @@ async def publish(fragment: FragmentPublishRequest):
         did_match_history=[],
         non_match_history=[],
     )
-    hits = q_client.search(
+    hits = q_client.query_points(
         collection_name=COLLECTION_NAME,
         query_vector=fragment_model.vector,
         limit=5,
