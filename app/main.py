@@ -39,14 +39,22 @@ async def publish(fragment: FragmentPublishRequest):
         social_apps=fragment.social_apps,
         languages=fragment.languages,
         region=fragment.region,
-        creation_time=datetime.now(timezone.utc),
+        creation_time=datetime.now(),
         ttl_hours=24,
         did_match_history=[],
         non_match_history=[],
     )
     hits = q_client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=fragment_model.vector,
+        query=fragment_model.vector,
+        # query_filter=Filter(
+        #     must_not=[
+        #         FieldCondition(
+        #             key="ephemeral_pubkey",
+        #             match=MatchValue(value=fragment_model.ephemeral_pubkey),
+        #         )
+        #     ]
+        # ),
         limit=5,
     )
     point_id = str(fragment_model.fragment_id)
@@ -65,7 +73,7 @@ async def publish(fragment: FragmentPublishRequest):
                     "languages": [lang.value for lang in fragment_model.languages],
                     "social_apps": [app.value for app in fragment_model.social_apps],
                     "region": list(fragment_model.region),
-                    "creation_time": fragment_model.creation_time,
+                    "creation_time": fragment_model.creation_time.isoformat(),
                     "ttl_hours": fragment_model.ttl_hours,
                     "did_match_history": [],
                     "non_match_history": [],
