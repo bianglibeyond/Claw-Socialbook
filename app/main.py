@@ -39,12 +39,12 @@ async def publish(fragment: FragmentPublishRequest):
         social_apps=fragment.social_apps,
         languages=fragment.languages,
         region=fragment.region,
-        creation_time=datetime.now(),
+        creation_time=datetime.now(timezone.utc),
         ttl_hours=24,
         did_match_history=[],
         non_match_history=[],
     )
-    hits = q_client.query_points(
+    resp = q_client.query_points(
         collection_name=COLLECTION_NAME,
         query=fragment_model.vector,
         # query_filter=Filter(
@@ -57,6 +57,7 @@ async def publish(fragment: FragmentPublishRequest):
         # ),
         limit=5,
     )
+    hits = getattr(resp, "points", resp)
     point_id = str(fragment_model.fragment_id)
     q_client.upsert(
         collection_name=COLLECTION_NAME,
@@ -81,16 +82,28 @@ async def publish(fragment: FragmentPublishRequest):
             )
         ],
     )
-    matches = [
-        {
-            "initiator_fragment_id": fragment_model.fragment_id,
-            "response_fragment_id": uuid.UUID(str(h.id)),
-            "initiator_ephemeral_pubkey": fragment_model.ephemeral_pubkey,
-            "response_ephemeral_pubkey": h.payload.get("ephemeral_pubkey"),
-            "score": h.score,
-        }
-        for h in hits
-    ][:5]
+    matches = []
+    for h in hits:
+        hid = getattr(h, "id", None) if not isinstance(h, dict) else h.get("id")
+        payload = getattr(h, "payload", None) if not isinstance(h, dict) else h.get("payload", {})
+        score = getattr(h, "score", None) if not isinstance(h, dict) else h.get("score")
+        if hid is None:
+            continue
+        try:
+            rid = uuid.UUID(str(hid))
+        except Exception:
+            continue
+        matches.append(
+            {
+                "initiator_fragment_id": fragment_model.fragment_id,
+                "response_fragment_id": rid,
+                "initiator_ephemeral_pubkey": fragment_model.ephemeral_pubkey,
+                "response_ephemeral_pubkey": (payload or {}).get("ephemeral_pubkey"),
+                "score": score,
+            }
+        )
+        if len(matches) >= 5:
+            break
     return {
         "fragment_id": uuid.UUID(point_id),
         "hint": fragment_model.hint,
