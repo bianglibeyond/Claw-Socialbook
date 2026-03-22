@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import FastAPI
 from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue
 from .database import get_qdrant_client, get_redis_client
@@ -39,7 +39,7 @@ async def publish(fragment: FragmentPublishRequest):
         social_apps=fragment.social_apps,
         languages=fragment.languages,
         region=fragment.region,
-        creation_time=datetime.now(datetime.UTC),
+        creation_time=datetime.now(timezone.utc),
         ttl_hours=24,
         did_match_history=[],
         non_match_history=[],
