@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-qdrant-client
+qdrant-client>=1.6.0
 redis
 pycountry
 cryptography
