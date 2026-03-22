@@ -39,26 +39,26 @@ class Protocol_Version(StrEnum):
 
 def validate_ephemeral_X25519_pubkey(v: str):
     s = v.strip()
-    try:
-        b = base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
-    except Exception:
+    if len(s) == 64:
         try:
-            b = base64.b64decode(s + "=" * (-len(s) % 4), validate=True)
+            b = bytes.fromhex(s)
+            if len(b) == 32:
+                X25519PublicKey.from_public_bytes(b)
+                return v
+        except (ValueError, binascii.Error):
+            pass
+    for decoder in (
+        base64.urlsafe_b64decode,
+        lambda x: base64.b64decode(x, validate=True),
+    ):
+        try:
+            b = decoder(s + "=" * (-len(s) % 4))
+            if len(b) == 32:
+                X25519PublicKey.from_public_bytes(b)
+                return v
         except Exception:
-            if len(s) == 64:
-                try:
-                    b = bytes.fromhex(s)
-                except (ValueError, binascii.Error):
-                    raise ValueError("invalid hex")
-            else:
-                raise ValueError("invalid base64/hex")
-    if len(b) != 32:
-        raise ValueError("must be 32 bytes")
-    try:
-        X25519PublicKey.from_public_bytes(b)
-    except Exception:
-        raise ValueError("not an X25519 public key")
-    return v
+            continue
+    raise ValueError("must be 32 bytes (base64) or 64 hex chars for X25519 public key")
     
 
 
