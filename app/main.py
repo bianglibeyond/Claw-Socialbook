@@ -1,4 +1,5 @@
 import uuid
+import json
 from datetime import datetime, timezone
 from fastapi import FastAPI
 from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue
@@ -9,6 +10,12 @@ from .schemas import (
     FragmentMatchRequest,
     FragmentMatchResponse,
     Fragment,
+    MailboxSendRequest,
+    MailboxSendResponse,
+    MailboxPollRequest,
+    MailboxPollResponse,
+    Mailbox,
+    MailboxMessage,
 )
 
 app = FastAPI(title="ClawSocialbook Blind Relay")
@@ -158,23 +165,69 @@ async def match(fragment: FragmentMatchRequest):
             break
     return {"matches": matches}
 
-# @app.post("/mailbox/send")
-# async def send_message(msg: Handshake):
-#     # Drop encrypted message into Redis list for that pubkey
-#     # TTL of 24 hours (86400 seconds)
-#     r_client.lpush(f"mail:{msg.to_pubkey}", msg.encrypted_payload)
-#     r_client.expire(f"mail:{msg.to_pubkey}", 86400)
-#     return {"status": "sent"}
 
-# @app.get("/mailbox/poll")
-# async def poll_messages(pubkey: str):
-#     # Pop all messages for this agent
-#     messages = []
-#     while True:
-#         m = r_client.rpop(f"mail:{pubkey}")
-#         if not m: break
-#         messages.append(m)
-#     return {"messages": messages}
+
+@app.post("/mailbox/send", response_model=MailboxSendResponse)
+async def send_message(req: MailboxSendRequest):
+    mailbox_id = req.mailbox_id or uuid.uuid4()
+    key = f"mailbox:{mailbox_id}"
+    raw = r_client.get(key)
+    mailbox: Mailbox | None = None
+    if raw:
+        try:
+            mailbox = Mailbox(**json.loads(raw))
+        except Exception:
+            mailbox = None
+    if mailbox is None:
+        mailbox = Mailbox(
+            mailbox_id=mailbox_id,
+            initiator_fragment_id=req.initiator_fragment_id,
+            responder_fragment_id=req.responder_fragment_id,
+            initiator_ephemeral_pubkey=req.initiator_ephemeral_pubkey,
+            responder_ephemeral_pubkey=req.responder_ephemeral_pubkey,
+            initiator_fragment_hint=req.initiator_fragment_hint,
+            responder_fragment_hint=req.responder_fragment_hint,
+            mailbox_type=req.mailbox_type,
+            messages=[
+                MailboxMessage(sender=req.sender_role, ciphertext=req.ciphertext),
+            ],
+        )
+    else:
+        mailbox.messages.append(MailboxMessage(sender=req.sender_role, ciphertext=req.ciphertext))
+        if len(mailbox.messages) > 20:
+            mailbox.messages = mailbox.messages[-20:]
+    r_client.set(key, json.dumps(mailbox.model_dump()), ex=86400)
+    idx_a = f"mailbox_index:{mailbox.initiator_fragment_id}"
+    idx_b = f"mailbox_index:{mailbox.responder_fragment_id}"
+    r_client.sadd(idx_a, str(mailbox.mailbox_id))
+    r_client.sadd(idx_b, str(mailbox.mailbox_id))
+    r_client.expire(idx_a, 86400)
+    r_client.expire(idx_b, 86400)
+    return {"mailbox": mailbox}
+
+
+
+@app.post("/mailbox/poll", response_model=MailboxPollResponse)
+async def poll_messages(req: MailboxPollRequest):
+    idx = f"mailbox_index:{req.fragment_id}"
+    ids = r_client.smembers(idx) or []
+    latest: Mailbox | None = None
+    latest_ct: datetime | None = None
+    for mid in ids:
+        raw = r_client.get(f"mailbox:{mid}")
+        if not raw:
+            continue
+        try:
+            mb = Mailbox(**json.loads(raw))
+        except Exception:
+            continue
+        ct = mb.creation_time
+        if latest is None or (latest_ct is None) or (ct and ct > latest_ct):
+            latest = mb
+            latest_ct = ct
+    return {"mailbox": latest}
+
+
 
 @app.get("/health")
 async def health():

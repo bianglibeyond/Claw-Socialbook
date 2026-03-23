@@ -194,6 +194,7 @@ class MailboxMessage(BaseModel):
 
 
 class Mailbox(BaseModel):
+    protocol_version: Protocol_Version = Protocol_Version.V_2026_03_21
     mailbox_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     initiator_fragment_id: uuid.UUID
     responder_fragment_id: uuid.UUID
@@ -216,6 +217,7 @@ class Mailbox(BaseModel):
 
 
 class MailboxSendRequest(BaseModel):
+    protocol_version: Protocol_Version = Protocol_Version.V_2026_03_21
     mailbox_id: uuid.UUID | None
     initiator_fragment_id: uuid.UUID
     responder_fragment_id: uuid.UUID

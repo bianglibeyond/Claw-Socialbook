@@ -33,3 +33,20 @@ sample = {
     ]
 }
 sample['vector'] = [random() for _ in range(1536)]
+
+sample_mailbox_send = {
+    "protocol_version": "2026-03-21",
+    "hint": "i read book lol",
+    "fragment_type": "IDENTITY",
+    "match_threshold": 0.85,
+    "ephemeral_pubkey": public_bytes.hex(),
+    "social_apps": [
+        "WHATSAPP"
+    ],
+    "languages": [
+        "ENGLISH"
+    ],
+    "region": [
+        "us", 'japan'
+    ]
+}
