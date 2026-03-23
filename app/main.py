@@ -1,9 +1,15 @@
 import uuid
 from datetime import datetime, timezone
 from fastapi import FastAPI
-from qdrant_client.models import PointStruct, VectorParams, Distance
+from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue
 from .database import get_qdrant_client, get_redis_client
-from .schemas import FragmentPublishRequest, FragmentPublishResponse, Fragment
+from .schemas import (
+    FragmentPublishRequest,
+    FragmentPublishResponse,
+    FragmentMatchRequest,
+    FragmentMatchResponse,
+    Fragment,
+)
 
 app = FastAPI(title="ClawSocialbook Blind Relay")
 
@@ -44,20 +50,6 @@ async def publish(fragment: FragmentPublishRequest):
         did_match_history=[],
         non_match_history=[],
     )
-    resp = q_client.query_points(
-        collection_name=COLLECTION_NAME,
-        query=fragment_model.vector,
-        # query_filter=Filter(
-        #     must_not=[
-        #         FieldCondition(
-        #             key="ephemeral_pubkey",
-        #             match=MatchValue(value=fragment_model.ephemeral_pubkey),
-        #         )
-        #     ]
-        # ),
-        limit=5,
-    )
-    hits = getattr(resp, "points", resp)
     point_id = str(fragment_model.fragment_id)
     q_client.upsert(
         collection_name=COLLECTION_NAME,
@@ -82,6 +74,64 @@ async def publish(fragment: FragmentPublishRequest):
             )
         ],
     )
+    match_req = FragmentMatchRequest(
+        protocol_version=fragment_model.protocol_version,
+        vector=fragment_model.vector,
+        hint=fragment_model.hint,
+        fragment_type=fragment_model.fragment_type,
+        match_threshold=fragment_model.match_threshold,
+        ephemeral_pubkey=fragment_model.ephemeral_pubkey,
+        social_apps=fragment_model.social_apps,
+        languages=fragment_model.languages,
+        region=fragment_model.region,
+        initiator_fragment_id=fragment_model.fragment_id,
+        initiator_fragment_hint=fragment_model.hint,
+        limit=5,
+    )
+    match_resp = await match(match_req)
+    return {
+        "fragment_id": uuid.UUID(point_id),
+        "hint": fragment_model.hint,
+        "matches": match_resp.get("matches", []),
+    }
+
+
+
+@app.post("/match", response_model=FragmentMatchResponse)
+async def match(fragment: FragmentMatchRequest):
+    query_filter = Filter(
+        must=[
+            # FieldCondition(
+            #     key="fragment_type",
+            #     match=MatchValue(value=fragment.fragment_type.value),
+            # )
+        ],
+        must_not=[
+            FieldCondition(
+                key="ephemeral_pubkey",
+                match=MatchValue(value=fragment.ephemeral_pubkey),
+            )
+        ],
+    )
+    hits = []
+    try:
+        hits = q_client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=fragment.vector,
+            limit=fragment.limit,
+            query_filter=query_filter,
+        )
+    except Exception:
+        try:
+            resp = q_client.query_points(
+                collection_name=COLLECTION_NAME,
+                query=fragment.vector,
+                limit=fragment.limit,
+                query_filter=query_filter,
+            )
+            hits = getattr(resp, "points", resp)
+        except Exception:
+            hits = []
     matches = []
     for h in hits:
         hid = getattr(h, "id", None) if not isinstance(h, dict) else h.get("id")
@@ -95,38 +145,36 @@ async def publish(fragment: FragmentPublishRequest):
             continue
         matches.append(
             {
-                "initiator_fragment_id": fragment_model.fragment_id,
-                "response_fragment_id": rid,
-                "initiator_ephemeral_pubkey": fragment_model.ephemeral_pubkey,
-                "response_ephemeral_pubkey": (payload or {}).get("ephemeral_pubkey"),
-                "score": score,
+                "initiator_fragment_id": fragment.initiator_fragment_id,
+                "responder_fragment_id": rid,
+                "initiator_ephemeral_pubkey": fragment.ephemeral_pubkey,
+                "responder_ephemeral_pubkey": (payload or {}).get("ephemeral_pubkey"),
+                "initiator_fragment_hint": fragment.initiator_fragment_hint,
+                "responder_fragment_hint": (payload or {}).get("hint"),
+                "score": score if score is not None else 0.0,
             }
         )
-        if len(matches) >= 5:
+        if len(matches) >= fragment.limit:
             break
-    return {
-        "fragment_id": uuid.UUID(point_id),
-        "hint": fragment_model.hint,
-        "matches": matches,
-    }
+    return {"matches": matches}
 
-@app.post("/mailbox/send")
-async def send_message(msg: Handshake):
-    # Drop encrypted message into Redis list for that pubkey
-    # TTL of 24 hours (86400 seconds)
-    r_client.lpush(f"mail:{msg.to_pubkey}", msg.encrypted_payload)
-    r_client.expire(f"mail:{msg.to_pubkey}", 86400)
-    return {"status": "sent"}
+# @app.post("/mailbox/send")
+# async def send_message(msg: Handshake):
+#     # Drop encrypted message into Redis list for that pubkey
+#     # TTL of 24 hours (86400 seconds)
+#     r_client.lpush(f"mail:{msg.to_pubkey}", msg.encrypted_payload)
+#     r_client.expire(f"mail:{msg.to_pubkey}", 86400)
+#     return {"status": "sent"}
 
-@app.get("/mailbox/poll")
-async def poll_messages(pubkey: str):
-    # Pop all messages for this agent
-    messages = []
-    while True:
-        m = r_client.rpop(f"mail:{pubkey}")
-        if not m: break
-        messages.append(m)
-    return {"messages": messages}
+# @app.get("/mailbox/poll")
+# async def poll_messages(pubkey: str):
+#     # Pop all messages for this agent
+#     messages = []
+#     while True:
+#         m = r_client.rpop(f"mail:{pubkey}")
+#         if not m: break
+#         messages.append(m)
+#     return {"messages": messages}
 
 @app.get("/health")
 async def health():

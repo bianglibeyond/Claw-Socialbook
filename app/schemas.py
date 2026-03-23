@@ -153,6 +153,31 @@ class FragmentPublishResponse(BaseModel):
 
 
 
+class FragmentMatchRequest(BaseModel):
+    protocol_version: Protocol_Version = Protocol_Version.V_2026_03_21
+    vector: List[float] = Field(..., min_items=1536, max_items=1536)
+    hint: str
+    fragment_type: MatchNature
+    match_threshold: float = Field(default=0.85, ge=0.5, le=1.0)
+    ephemeral_pubkey: str
+    social_apps: Set[SocialAPP] = Field(..., min_items=1, max_items=len(SocialAPP))
+    languages: Set[Language] = Field(..., min_items=1, max_items=len(Language))
+    region: Set[str] = Field(..., min_items=0, max_items=10)
+    initiator_fragment_id: uuid.UUID
+    initiator_fragment_hint: str
+    limit: int = Field(default=5, ge=1, le=20)
+
+    @field_validator("ephemeral_pubkey")
+    def validate_ephemeral_pubkey(cls, v: str):
+        return validate_ephemeral_X25519_pubkey(v)
+
+
+
+class FragmentMatchResponse(BaseModel):
+    matches: List[Match] = Field(default_factory=list, max_items=5)
+
+
+
 class MailboxType(StrEnum):
     REQUEST = "REQUEST"
     DISCUSS = "DISCUSS"
@@ -229,4 +254,3 @@ class MailboxPollRequest(BaseModel):
 
 class MailboxPollResponse(BaseModel):
     mailbox: Mailbox | None
-
