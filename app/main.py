@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from fastapi import FastAPI
-from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue
+from qdrant_client.models import PointStruct, VectorParams, Distance
 from .database import get_qdrant_client, get_redis_client
 from .schemas import FragmentPublishRequest, FragmentPublishResponse, Fragment
 
@@ -30,7 +30,7 @@ except Exception:
 async def publish(fragment: FragmentPublishRequest):
     fragment_model = Fragment(
         protocol_version=fragment.protocol_version,
-        fragment_id=uuid.uuid4(),
+        # fragment_id=uuid.uuid4(),
         vector=fragment.vector,
         hint=fragment.hint,
         fragment_type=fragment.fragment_type,
@@ -39,7 +39,7 @@ async def publish(fragment: FragmentPublishRequest):
         social_apps=fragment.social_apps,
         languages=fragment.languages,
         region=fragment.region,
-        creation_time=datetime.now(timezone.utc),
+        # creation_time=datetime.now(timezone.utc),
         ttl_hours=24,
         did_match_history=[],
         non_match_history=[],
@@ -110,23 +110,23 @@ async def publish(fragment: FragmentPublishRequest):
         "matches": matches,
     }
 
-# @app.post("/mailbox/send")
-# async def send_message(msg: Handshake):
-#     # Drop encrypted message into Redis list for that pubkey
-#     # TTL of 24 hours (86400 seconds)
-#     r_client.lpush(f"mail:{msg.to_pubkey}", msg.encrypted_payload)
-#     r_client.expire(f"mail:{msg.to_pubkey}", 86400)
-#     return {"status": "sent"}
+@app.post("/mailbox/send")
+async def send_message(msg: Handshake):
+    # Drop encrypted message into Redis list for that pubkey
+    # TTL of 24 hours (86400 seconds)
+    r_client.lpush(f"mail:{msg.to_pubkey}", msg.encrypted_payload)
+    r_client.expire(f"mail:{msg.to_pubkey}", 86400)
+    return {"status": "sent"}
 
-# @app.get("/mailbox/poll")
-# async def poll_messages(pubkey: str):
-#     # Pop all messages for this agent
-#     messages = []
-#     while True:
-#         m = r_client.rpop(f"mail:{pubkey}")
-#         if not m: break
-#         messages.append(m)
-#     return {"messages": messages}
+@app.get("/mailbox/poll")
+async def poll_messages(pubkey: str):
+    # Pop all messages for this agent
+    messages = []
+    while True:
+        m = r_client.rpop(f"mail:{pubkey}")
+        if not m: break
+        messages.append(m)
+    return {"messages": messages}
 
 @app.get("/health")
 async def health():

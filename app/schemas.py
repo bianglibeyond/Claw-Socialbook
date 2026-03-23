@@ -1,7 +1,8 @@
+from datetime import timezone
 import uuid
 import base64
 import binascii
-from typing import List, Optional, Literal, Set
+from typing import List, Literal, Set
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 from enum import StrEnum
@@ -64,17 +65,19 @@ def validate_ephemeral_X25519_pubkey(v: str):
 
 class Match(BaseModel):
     initiator_fragment_id: uuid.UUID
-    response_fragment_id: uuid.UUID
+    responder_fragment_id: uuid.UUID
     initiator_ephemeral_pubkey: str
-    response_ephemeral_pubkey: str
+    responder_ephemeral_pubkey: str
+    initiator_fragment_hint: str
+    responder_fragment_hint: str
     score: float = Field(..., ge=0.0, le=1.0)
 
     @field_validator("initiator_ephemeral_pubkey")
     def validate_initiator_ephemeral_pubkey(cls, v: str):
         return validate_ephemeral_X25519_pubkey(v)
     
-    @field_validator("response_ephemeral_pubkey")
-    def validate_response_ephemeral_pubkeyal_pubkey(cls, v: str):
+    @field_validator("responder_ephemeral_pubkey")
+    def validate_responder_ephemeral_pubkey(cls, v: str):
         return validate_ephemeral_X25519_pubkey(v)
 
 
@@ -102,12 +105,12 @@ class Fragment(BaseModel):
     region: Set[str] = Field(..., min_items=0, max_items=10)
 
     # Timeline
-    creation_time: datetime
+    creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     ttl_hours: int = 24 # How long should the Relay keep this?
 
     # Match History
-    did_match_history: List[Match]
-    non_match_history: List[Match]
+    did_match_history: List[Match] = Field(default_factory=list)
+    non_match_history: List[Match] = Field(default_factory=list)
 
     @field_validator("ephemeral_pubkey")
     def validate_ephemeral_pubkey(cls, v: str):
@@ -143,45 +146,87 @@ class FragmentPublishRequest(BaseModel):
 
 
 
-
 class FragmentPublishResponse(BaseModel):
     fragment_id: uuid.UUID
     hint: str
     matches: List[Match] = Field(..., max_items=5)
 
-# class MatchRequest(BaseModel):
-#     fragment_type: Literal["identity", "stuckness", "intent"]
-#     query_vector: List[float]
-#     top_k: int = 10
-#     min_similarity: float = 0.85
 
-# class MatchItem(BaseModel):
-#     fragment_id: str
-#     score: float
-#     owner_hash: str
-#     ephemeral_pubkey: str
 
-# class MatchResponse(BaseModel):
-#     matches: List[MatchItem]
+class MailboxType(StrEnum):
+    REQUEST = "REQUEST"
+    DISCUSS = "DISCUSS"
+    CONSENT = "CONSENT"
+    REJECT = "REJECT"
 
-# class HandshakeSendRequest(BaseModel):
-#     to_owner_hash: str
-#     message_type: Literal["request", "consent", "link"]
-#     encrypted_blob: str
-#     sender_fragment_id: Optional[str] = None
 
-# class HandshakeSendResponse(BaseModel):
-#     ok: bool
 
-# class HandshakePollRequest(BaseModel):
-#     owner_hash: str
-#     wait_seconds: int = 30
+class MailboxMessage(BaseModel):
+    sender: Literal["initiator", "responder"]
+    ciphertext: str
+    creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-# class HandshakeMessage(BaseModel):
-#     message_type: str
-#     encrypted_blob: str
-#     sender_fragment_id: Optional[str] = None
-#     timestamp: datetime
 
-# class HandshakePollResponse(BaseModel):
-#     message: Optional[HandshakeMessage] = None
+
+class Mailbox(BaseModel):
+    mailbox_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    initiator_fragment_id: uuid.UUID
+    responder_fragment_id: uuid.UUID
+    initiator_ephemeral_pubkey: str
+    responder_ephemeral_pubkey: str
+    initiator_fragment_hint: str
+    responder_fragment_hint: str
+    mailbox_type: MailboxType
+    messages: List[MailboxMessage] = Field(..., min_items=1, max_items=20)
+    creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @field_validator("initiator_ephemeral_pubkey")
+    def validate_initiator_ephemeral_pubkey(cls, v: str):
+        return validate_ephemeral_X25519_pubkey(v)
+    
+    @field_validator("responder_ephemeral_pubkey")
+    def validate_responder_ephemeral_pubkey(cls, v: str):
+        return validate_ephemeral_X25519_pubkey(v)
+
+
+
+class MailboxSendRequest(BaseModel):
+    mailbox_id: uuid.UUID | None
+    initiator_fragment_id: uuid.UUID
+    responder_fragment_id: uuid.UUID
+    initiator_ephemeral_pubkey: str
+    responder_ephemeral_pubkey: str
+    responder_fragment_hint: str
+    initiator_fragment_hint: str
+    mailbox_type: MailboxType
+    sender_role: Literal["initiator", "responder"]
+    ciphertext: str = Field(..., max_length=1024)
+
+    @field_validator("initiator_ephemeral_pubkey")
+    def validate_initiator_ephemeral_pubkey(cls, v: str):
+        return validate_ephemeral_X25519_pubkey(v)
+    
+    @field_validator("responder_ephemeral_pubkey")
+    def validate_responder_ephemeral_pubkey(cls, v: str):
+        return validate_ephemeral_X25519_pubkey(v)
+
+
+
+class MailboxSendResponse(BaseModel):
+    mailbox: Mailbox
+
+
+
+class MailboxPollRequest(BaseModel):
+    fragment_id: uuid.UUID
+    ephemeral_pubkey: str
+
+    @field_validator("ephemeral_pubkey")
+    def validate_ephemeral_pubkey(cls, v: str):
+        return validate_ephemeral_X25519_pubkey(v)
+
+
+
+class MailboxPollResponse(BaseModel):
+    mailbox: Mailbox | None
+
