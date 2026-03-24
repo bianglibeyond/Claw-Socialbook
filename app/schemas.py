@@ -245,7 +245,7 @@ class MailboxSendResponse(BaseModel):
 
 
 class MailboxPollRequest(BaseModel):
-    fragment_id: uuid.UUID
+    fragment_id: uuid.UUID | None = None
     ephemeral_pubkey: str
 
     @field_validator("ephemeral_pubkey")

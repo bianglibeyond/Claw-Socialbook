@@ -197,20 +197,24 @@ async def send_message(req: MailboxSendRequest):
         if len(mailbox.messages) > 20:
             mailbox.messages = mailbox.messages[-20:]
     r_client.set(key, mailbox.model_dump_json(), ex=86400)
-    idx_a = f"mailbox_index:{mailbox.initiator_fragment_id}"
-    idx_b = f"mailbox_index:{mailbox.responder_fragment_id}"
-    r_client.sadd(idx_a, str(mailbox.mailbox_id))
-    r_client.sadd(idx_b, str(mailbox.mailbox_id))
-    r_client.expire(idx_a, 86400)
-    r_client.expire(idx_b, 86400)
+    for idx in (
+        f"mailbox_index:{mailbox.initiator_fragment_id}",
+        f"mailbox_index:{mailbox.responder_fragment_id}",
+        f"mailbox_index_ephemeral:{mailbox.initiator_ephemeral_pubkey}",
+        f"mailbox_index_ephemeral:{mailbox.responder_ephemeral_pubkey}",
+    ):
+        r_client.sadd(idx, str(mailbox.mailbox_id))
+        r_client.expire(idx, 86400)
     return {"mailbox": mailbox}
 
 
 
 @app.post("/mailbox/poll", response_model=MailboxPollResponse)
 async def poll_messages(req: MailboxPollRequest):
-    idx = f"mailbox_index:{req.fragment_id}"
-    ids = r_client.smembers(idx) or []
+    if req.fragment_id:
+        ids = r_client.smembers(f"mailbox_index:{req.fragment_id}") or []
+    else:
+        ids = r_client.smembers(f"mailbox_index_ephemeral:{req.ephemeral_pubkey}") or []
     latest: Mailbox | None = None
     latest_ct: datetime | None = None
     for mid in ids:
