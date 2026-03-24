@@ -183,6 +183,7 @@ class MailboxType(StrEnum):
     DISCUSS = "DISCUSS"
     CONSENT = "CONSENT"
     REJECT = "REJECT"
+    CLOSED = "CLOSED"
 
 
 

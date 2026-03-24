@@ -181,7 +181,7 @@ async def send_message(req: MailboxSendRequest):
             ],
         )
     else:
-        mailbox.mailbox_type = req.mailbox_type
+        mailbox.mailbox_type = MailboxType.CLOSED if req.mailbox_type == MailboxType.REJECT else req.mailbox_type
         mailbox.messages.append(MailboxMessage(sender=req.sender_role, ciphertext=req.ciphertext))
         if len(mailbox.messages) > 20:
             mailbox.messages = mailbox.messages[-20:]
@@ -214,7 +214,7 @@ async def poll_one_mailbox(req: MailboxPollOneRequest):
             mb = Mailbox(**json.loads(raw))
         except Exception:
             continue
-        if mb.mailbox_type not in (MailboxType.REQUEST, MailboxType.DISCUSS):
+        if mb.mailbox_type is MailboxType.CLOSED:
             continue
         ct = mb.creation_time
         if latest is None or (latest_ct is None) or (ct and ct > latest_ct):
@@ -236,7 +236,7 @@ async def poll_all_mailbox(req: MailboxPollAllRequest):
             mb = Mailbox(**json.loads(raw))
         except Exception:
             continue
-        if mb.mailbox_type in (MailboxType.REQUEST, MailboxType.DISCUSS):
+        if mb.mailbox_type is not MailboxType.CLOSED:
             items.append(mb)
     return {"mailboxes": items}
 
