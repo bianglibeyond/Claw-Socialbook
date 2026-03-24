@@ -12,8 +12,10 @@ from .schemas import (
     Fragment,
     MailboxSendRequest,
     MailboxSendResponse,
-    MailboxPollRequest,
-    MailboxPollResponse,
+    MailboxPollOneRequest,
+    MailboxPollAllRequest,
+    MailboxPollOneResponse,
+    MailboxPollAllResponse,
     Mailbox,
     MailboxMessage,
 )
@@ -209,12 +211,11 @@ async def send_message(req: MailboxSendRequest):
 
 
 
-@app.post("/mailbox/poll", response_model=MailboxPollResponse)
-async def poll_messages(req: MailboxPollRequest):
-    if req.fragment_id:
-        ids = r_client.smembers(f"mailbox_index:{req.fragment_id}") or []
-    else:
-        ids = r_client.smembers(f"mailbox_index_ephemeral:{req.ephemeral_pubkey}") or []
+@app.post("/mailbox/poll-one", response_model=MailboxPollOneResponse)
+async def poll_one_mailbox(req: MailboxPollOneRequest):
+    a = r_client.smembers(f"mailbox_index:{req.initiator_fragment_id}") or []
+    b = r_client.smembers(f"mailbox_index:{req.responder_fragment_id}") or []
+    ids = set(a) & set(b)
     latest: Mailbox | None = None
     latest_ct: datetime | None = None
     for mid in ids:
@@ -230,6 +231,23 @@ async def poll_messages(req: MailboxPollRequest):
             latest = mb
             latest_ct = ct
     return {"mailbox": latest}
+
+
+
+@app.post("/mailbox/poll-all", response_model=MailboxPollAllResponse)
+async def poll_all_mailbox(req: MailboxPollAllRequest):
+    ids = r_client.smembers(f"mailbox_index_ephemeral:{req.ephemeral_pubkey}") or []
+    items: list[Mailbox] = []
+    for mid in ids:
+        raw = r_client.get(f"mailbox:{mid}")
+        if not raw:
+            continue
+        try:
+            mb = Mailbox(**json.loads(raw))
+        except Exception:
+            continue
+        items.append(mb)
+    return {"mailboxes": items}
 
 
 

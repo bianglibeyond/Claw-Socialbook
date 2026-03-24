@@ -244,8 +244,13 @@ class MailboxSendResponse(BaseModel):
 
 
 
-class MailboxPollRequest(BaseModel):
-    fragment_id: uuid.UUID | None = None
+class MailboxPollOneRequest(BaseModel):
+    initiator_fragment_id: uuid.UUID
+    responder_fragment_id: uuid.UUID
+
+
+
+class MailboxPollAllRequest(BaseModel):
     ephemeral_pubkey: str
 
     @field_validator("ephemeral_pubkey")
@@ -254,5 +259,10 @@ class MailboxPollRequest(BaseModel):
 
 
 
-class MailboxPollResponse(BaseModel):
+class MailboxPollOneResponse(BaseModel):
     mailbox: Mailbox | None
+
+
+
+class MailboxPollAllResponse(BaseModel):
+    mailboxes: List[Mailbox]
