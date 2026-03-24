@@ -194,6 +194,23 @@ async def send_message(req: MailboxSendRequest):
     ):
         r_client.sadd(idx, str(mailbox.mailbox_id))
         r_client.expire(idx, 86400)
+    if mailbox.mailbox_type is not MailboxType.CLOSED:
+        for oidx in (
+            f"mailbox_index_open:{mailbox.initiator_fragment_id}",
+            f"mailbox_index_open:{mailbox.responder_fragment_id}",
+            f"mailbox_index_ephemeral_open:{mailbox.initiator_ephemeral_pubkey}",
+            f"mailbox_index_ephemeral_open:{mailbox.responder_ephemeral_pubkey}",
+        ):
+            r_client.sadd(oidx, str(mailbox.mailbox_id))
+            r_client.expire(oidx, 86400)
+    else:
+        for oidx in (
+            f"mailbox_index_open:{mailbox.initiator_fragment_id}",
+            f"mailbox_index_open:{mailbox.responder_fragment_id}",
+            f"mailbox_index_ephemeral_open:{mailbox.initiator_ephemeral_pubkey}",
+            f"mailbox_index_ephemeral_open:{mailbox.responder_ephemeral_pubkey}",
+        ):
+            r_client.srem(oidx, str(mailbox.mailbox_id))
     return {"mailbox": mailbox}
 
 
@@ -201,9 +218,9 @@ async def send_message(req: MailboxSendRequest):
 #! Actually MailboxPollOneRequest restricts initiator and responder, but in this case it happens that it does not matter.
 @app.post("/mailbox/poll-one", response_model=MailboxPollOneResponse)
 async def poll_one_mailbox(req: MailboxPollOneRequest):
-    a = r_client.smembers(f"mailbox_index:{req.initiator_fragment_id}") or []
-    b = r_client.smembers(f"mailbox_index:{req.responder_fragment_id}") or []
-    ids = set(a) & set(b)
+    a = r_client.smembers(f"mailbox_index_open:{req.initiator_fragment_id}")
+    b = r_client.smembers(f"mailbox_index_open:{req.responder_fragment_id}")
+    ids = a & b
     latest: Mailbox | None = None
     latest_ct: datetime | None = None
     for mid in ids:
@@ -213,8 +230,6 @@ async def poll_one_mailbox(req: MailboxPollOneRequest):
         try:
             mb = Mailbox(**json.loads(raw))
         except Exception:
-            continue
-        if mb.mailbox_type is MailboxType.CLOSED:
             continue
         ct = mb.creation_time
         if latest is None or (latest_ct is None) or (ct and ct > latest_ct):
@@ -226,7 +241,7 @@ async def poll_one_mailbox(req: MailboxPollOneRequest):
 
 @app.post("/mailbox/poll-all", response_model=MailboxPollAllResponse)
 async def poll_all_mailbox(req: MailboxPollAllRequest):
-    ids = r_client.smembers(f"mailbox_index_ephemeral:{req.ephemeral_pubkey}") or []
+    ids = r_client.smembers(f"mailbox_index_ephemeral_open:{req.ephemeral_pubkey}")
     items: list[Mailbox] = []
     for mid in ids:
         raw = r_client.get(f"mailbox:{mid}")
@@ -236,8 +251,7 @@ async def poll_all_mailbox(req: MailboxPollAllRequest):
             mb = Mailbox(**json.loads(raw))
         except Exception:
             continue
-        if mb.mailbox_type is not MailboxType.CLOSED:
-            items.append(mb)
+        items.append(mb)
     return {"mailboxes": items}
 
 
