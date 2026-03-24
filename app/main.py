@@ -196,7 +196,7 @@ async def send_message(req: MailboxSendRequest):
         mailbox.messages.append(MailboxMessage(sender=req.sender_role, ciphertext=req.ciphertext))
         if len(mailbox.messages) > 20:
             mailbox.messages = mailbox.messages[-20:]
-    r_client.set(key, json.dumps(mailbox.model_dump()), ex=86400)
+    r_client.set(key, mailbox.model_dump_json(), ex=86400)
     idx_a = f"mailbox_index:{mailbox.initiator_fragment_id}"
     idx_b = f"mailbox_index:{mailbox.responder_fragment_id}"
     r_client.sadd(idx_a, str(mailbox.mailbox_id))
