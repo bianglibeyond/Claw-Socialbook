@@ -196,6 +196,7 @@ async def send_message(req: MailboxSendRequest):
             ],
         )
     else:
+        mailbox.mailbox_type = req.mailbox_type
         mailbox.messages.append(MailboxMessage(sender=req.sender_role, ciphertext=req.ciphertext))
         if len(mailbox.messages) > 20:
             mailbox.messages = mailbox.messages[-20:]
