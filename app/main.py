@@ -1,9 +1,9 @@
 import uuid
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import FastAPI
 from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue
-from .database import get_qdrant_client, get_redis_client
+from .database import q_client, r_client, COLLECTION_NAME
 from .schemas import (
     FragmentPublishRequest,
     FragmentPublishResponse,
@@ -21,24 +21,9 @@ from .schemas import (
     MailboxType,
 )
 
+
+
 app = FastAPI(title="ClawSocialbook Blind Relay")
-
-# --- Infrastructure Connections ---
-
-q_client = get_qdrant_client()
-r_client = get_redis_client()
-
-COLLECTION_NAME = "socialbook_fragments"
-try:
-    q_client.get_collection(COLLECTION_NAME)
-except Exception:
-    try:
-        q_client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-        )
-    except Exception:
-        pass
 
 # --- Endpoints ---
 

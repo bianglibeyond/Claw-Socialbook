@@ -1,8 +1,9 @@
 import os
-import json
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 import redis
+
+
 
 def get_qdrant_client():
     url = os.getenv("QDRANT_URL")
@@ -17,6 +18,8 @@ def get_qdrant_client():
         return QdrantClient(host=host, port=port, api_key=api_key)
     return QdrantClient(host=host, port=port)
 
+
+
 def ensure_collections(client: QdrantClient):
     vectors = VectorParams(size=3072, distance=Distance.COSINE) # Gemini Embedding 2 is 3072-dimension
     for name in ["identity_fragments", "stuckness_fragments", "intent_fragments"]:
@@ -24,6 +27,8 @@ def ensure_collections(client: QdrantClient):
             client.get_collection(name)
         except Exception:
             client.create_collection(collection_name=name, vectors_config=vectors)
+
+
 
 def get_redis_client():
     url = os.getenv("REDIS_URL")
@@ -35,19 +40,20 @@ def get_redis_client():
     db = int(os.getenv("REDIS_DB", "0"))
     return redis.Redis(host=host, port=port, password=password, db=db, decode_responses=True)
 
-# def mailbox_key(owner_hash: str) -> str:
-#     return f"mailbox:{owner_hash}"
 
-# def push_mail(r: redis.Redis, owner_hash: str, message: dict, ttl_seconds: int | None = None) -> bool:
-#     key = mailbox_key(owner_hash)
-#     r.lpush(key, json.dumps(message))
-#     if ttl_seconds:
-#         r.expire(key, ttl_seconds)
-#     return True
+# --- Infrastructure Connections ---
 
-# def poll_mail(r: redis.Redis, owner_hash: str, wait_seconds: int = 30) -> str | None:
-#     key = mailbox_key(owner_hash)
-#     item = r.brpop(key, timeout=wait_seconds)
-#     if item:
-#         return item[1]
-#     return None
+q_client = get_qdrant_client()
+r_client = get_redis_client()
+
+COLLECTION_NAME = "socialbook_fragments"
+try:
+    q_client.get_collection(COLLECTION_NAME)
+except Exception:
+    try:
+        q_client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+        )
+    except Exception:
+        pass
