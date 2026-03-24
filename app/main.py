@@ -211,6 +211,7 @@ async def send_message(req: MailboxSendRequest):
 
 
 
+#! Actually MailboxPollOneRequest restricts initiator and responder, but in this case it happens that it does not matter.
 @app.post("/mailbox/poll-one", response_model=MailboxPollOneResponse)
 async def poll_one_mailbox(req: MailboxPollOneRequest):
     a = r_client.smembers(f"mailbox_index:{req.initiator_fragment_id}") or []
