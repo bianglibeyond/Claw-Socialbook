@@ -2,7 +2,7 @@ import uuid
 import json
 from datetime import datetime
 from fastapi import FastAPI
-from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, FieldCondition, MatchValue
+from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
 from .database import q_client, r_client, COLLECTION_NAME
 from .schemas import (
     FragmentPublishRequest,
