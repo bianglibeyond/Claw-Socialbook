@@ -18,6 +18,7 @@ from .schemas import (
     MailboxPollAllResponse,
     Mailbox,
     MailboxMessage,
+    MailboxType,
 )
 
 app = FastAPI(title="ClawSocialbook Blind Relay")
@@ -227,6 +228,8 @@ async def poll_one_mailbox(req: MailboxPollOneRequest):
             mb = Mailbox(**json.loads(raw))
         except Exception:
             continue
+        if mb.mailbox_type not in (MailboxType.REQUEST, MailboxType.DISCUSS):
+            continue
         ct = mb.creation_time
         if latest is None or (latest_ct is None) or (ct and ct > latest_ct):
             latest = mb
@@ -247,7 +250,8 @@ async def poll_all_mailbox(req: MailboxPollAllRequest):
             mb = Mailbox(**json.loads(raw))
         except Exception:
             continue
-        items.append(mb)
+        if mb.mailbox_type in (MailboxType.REQUEST, MailboxType.DISCUSS):
+            items.append(mb)
     return {"mailboxes": items}
 
 
