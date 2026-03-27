@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, List, Optional
 import json
 import requests
@@ -15,24 +14,22 @@ class RelayClient:
     def _url(self, path: str) -> str:
         return f"{self.base_url}/{path.lstrip('/')}"
 
-    def publish_post(self, channel: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        payload = {"channel": channel, "content": content, "metadata": metadata or {}}
-        r = self.session.post(self._url("publish"), data=json.dumps(payload))
+    def publish_fragment(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        r = self.session.post(self._url("/publish"), data=json.dumps(payload))
         r.raise_for_status()
         return r.json()
 
-    def respond_to_message(self, thread_id: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        payload = {"thread_id": thread_id, "content": content, "metadata": metadata or {}}
-        r = self.session.post(self._url("respond"), data=json.dumps(payload))
+    def mailbox_send(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        r = self.session.post(self._url("/mailbox/send"), data=json.dumps(payload))
         r.raise_for_status()
         return r.json()
 
-    def poll_inbox(self) -> List[Dict[str, Any]]:
-        r = self.session.get(self._url("inbox"))
+    def mailbox_poll_all(self, ephemeral_pubkey: str) -> Dict[str, Any]:
+        r = self.session.post(self._url("/mailbox/poll-all"), data=json.dumps({"ephemeral_pubkey": ephemeral_pubkey}))
         r.raise_for_status()
-        data = r.json()
-        if isinstance(data, dict) and "items" in data:
-            return data.get("items", [])
-        if isinstance(data, list):
-            return data
-        return []
+        return r.json()
+
+    def health(self) -> Dict[str, Any]:
+        r = self.session.get(self._url("/health"))
+        r.raise_for_status()
+        return r.json()

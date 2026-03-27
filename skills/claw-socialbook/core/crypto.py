@@ -38,3 +38,28 @@ def load_private_key(raw: bytes) -> x25519.X25519PrivateKey:
 
 def load_public_key(raw: bytes) -> x25519.X25519PublicKey:
     return x25519.X25519PublicKey.from_public_bytes(raw)
+
+
+def b64url_encode(b: bytes) -> str:
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode("utf-8")
+
+
+def b64url_decode(s: str) -> bytes:
+    ss = s.strip()
+    pad = "=" * (-len(ss) % 4)
+    return base64.urlsafe_b64decode(ss + pad)
+
+
+def parse_pubkey_text(s: str) -> bytes:
+    st = s.strip()
+    if len(st) == 64:
+        try:
+            b = bytes.fromhex(st)
+            if len(b) == 32:
+                return b
+        except Exception:
+            pass
+    try:
+        return b64url_decode(st)
+    except Exception:
+        return base64.b64decode(st)

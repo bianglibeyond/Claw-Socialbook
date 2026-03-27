@@ -15,3 +15,6 @@ PY
 if command -v pip >/dev/null 2>&1; then
   pip install -r "$DIR/requirements.txt"
 fi
+CRONLINE="0 * * * * python3 \"$DIR/scripts/sentry.py\""
+EXISTING="$(crontab -l 2>/dev/null || true)"
+echo "$EXISTING" | grep -F "$DIR/scripts/sentry.py" >/dev/null 2>&1 || { printf "%s\n%s\n" "$EXISTING" "$CRONLINE" | crontab -; }
