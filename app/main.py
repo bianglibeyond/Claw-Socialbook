@@ -1,7 +1,12 @@
 import uuid
 import json
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse, StreamingResponse
+from pathlib import Path
+import tarfile
+import io
+import os
 from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
 from .database import q_client, r_client, COLLECTION_NAME
 from .schemas import (
@@ -269,3 +274,41 @@ async def health():
     except Exception:
         r = "error"
     return {"qdrant": q, "redis": r}
+
+
+@app.get("/client.tgz")
+async def client_bundle():
+    root = Path(__file__).resolve().parents[1] / "skills" / "claw-socialbook"
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        for p in root.rglob("*"):
+            if p.is_file():
+                rel = p.relative_to(root)
+                tar.add(str(p), arcname=str(rel))
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="application/gzip")
+
+
+@app.get("/install.sh")
+async def install_sh(request: Request):
+    base = f"{request.url.scheme}://{request.url.netloc}"
+    script = f"""#!/usr/bin/env bash
+set -euo pipefail
+INSTALL_DIR="$HOME/.claw-socialbook"
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+curl -fsSL "{base}/client.tgz" -o client.tgz
+tar -xzf client.tgz
+if command -v pip3 >/dev/null 2>&1; then pip3 install -r requirements.txt || true; else pip install -r requirements.txt || true; fi
+python3 - <<'PY'
+import json, os
+p = os.path.join(os.getcwd(), "config.json")
+cfg = json.load(open(p))
+cfg["relay_base_url"] = "{base}"
+json.dump(cfg, open(p,"w"), indent=2)
+PY
+bash scripts/install.sh
+python3 scripts/configure.py
+echo "ClawSocialbook client installed in $INSTALL_DIR"
+"""
+    return PlainTextResponse(script, media_type="text/x-shellscript")
