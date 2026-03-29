@@ -305,7 +305,7 @@ async def client_sha256(version: str | None = Query(default=None)):
 
 @app.get("/install.sh")
 async def install_sh(request: Request, version: str | None = Query(default=None)):
-    base = f"{request.url.scheme}://{request.url.netloc}"
+    base = f"https://{request.url.netloc}"
     script = f"""#!/usr/bin/env bash
 set -euo pipefail
 INSTALL_ROOT="${{OPENCLAW_HOME:-${{CLAW_HOME:-$HOME/.openclaw}}}}"
