@@ -1,4 +1,0 @@
-qdrant-client>=1.8.0
-cryptography>=41.0.0
-google-generativeai>=0.7.2
-requests>=2.31.0
