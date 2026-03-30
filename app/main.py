@@ -277,55 +277,55 @@ async def health():
     return {"qdrant": q, "redis": r}
 
 
-# def _make_client_tgz() -> bytes:
-#     root = Path(__file__).resolve().parents[1] / "skills" / "claw-socialbook"
-#     buf = io.BytesIO()
-#     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-#         for p in root.rglob("*"):
-#             if p.is_file():
-#                 rel = p.relative_to(root)
-#                 tar.add(str(p), arcname=str(rel))
-#     buf.seek(0)
-#     return buf.read()
+def _make_client_tgz() -> bytes:
+    root = Path(__file__).resolve().parents[1] / "skills" / "claw-socialbook"
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        for p in root.rglob("*"):
+            if p.is_file():
+                rel = p.relative_to(root)
+                tar.add(str(p), arcname=str(rel))
+    buf.seek(0)
+    return buf.read()
 
 
-# @app.get("/client.tgz")
-# async def client_bundle(version: str | None = Query(default=None)):
-#     data = _make_client_tgz()
-#     return StreamingResponse(io.BytesIO(data), media_type="application/gzip")
+@app.get("/client.tgz")
+async def client_bundle(version: str | None = Query(default=None)):
+    data = _make_client_tgz()
+    return StreamingResponse(io.BytesIO(data), media_type="application/gzip")
 
 
-# @app.get("/client.sha256")
-# async def client_sha256(version: str | None = Query(default=None)):
-#     data = _make_client_tgz()
-#     h = hashlib.sha256()
-#     h.update(data)
-#     return PlainTextResponse(h.hexdigest() + "\n", media_type="text/plain")
+@app.get("/client.sha256")
+async def client_sha256(version: str | None = Query(default=None)):
+    data = _make_client_tgz()
+    h = hashlib.sha256()
+    h.update(data)
+    return PlainTextResponse(h.hexdigest() + "\n", media_type="text/plain")
 
 
-# @app.get("/install.sh")
-# async def install_sh(request: Request, version: str | None = Query(default=None)):
-#     base = f"https://{request.url.netloc}"
-#     script = f"""#!/usr/bin/env bash
-# set -euo pipefail
-# INSTALL_ROOT="${{OPENCLAW_HOME:-${{CLAW_HOME:-$HOME/.openclaw}}}}"
-# SKILL_ID="claw-socialbook"
-# INSTALL_DIR="$INSTALL_ROOT/skills/$SKILL_ID"
-# mkdir -p "$INSTALL_DIR"
-# cd "$INSTALL_DIR"
-# URL_TGZ="{base}/client.tgz"
-# URL_SHA="{base}/client.sha256"
-# curl -fsSL "$URL_TGZ" -o client.tgz
-# curl -fsSL "$URL_SHA" -o client.tgz.sha256
-# if command -v sha256sum >/dev/null 2>&1; then
-#   ACTUAL="$(sha256sum client.tgz | awk '{{print $1}}')"
-# else
-#   ACTUAL="$(shasum -a 256 client.tgz | awk '{{print $1}}')"
-# fi
-# EXPECTED="$(cat client.tgz.sha256 | tr -d '\\n' | tr -d '\\r')"
-# test "$ACTUAL" = "$EXPECTED"
-# tar -xzf client.tgz
-# bash scripts/install.sh --prefix "$INSTALL_ROOT" --relay-base-url "{base}" "$@"
-# echo "ClawSocialbook client installed in $INSTALL_DIR"
-# """
-#     return PlainTextResponse(script, media_type="text/x-shellscript")
+@app.get("/install.sh")
+async def install_sh(request: Request, version: str | None = Query(default=None)):
+    base = f"https://{request.url.netloc}"
+    script = f"""#!/usr/bin/env bash
+set -euo pipefail
+INSTALL_ROOT="${{OPENCLAW_HOME:-${{CLAW_HOME:-$HOME/.openclaw}}}}"
+SKILL_ID="claw-socialbook"
+INSTALL_DIR="$INSTALL_ROOT/skills/$SKILL_ID"
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+URL_TGZ="{base}/client.tgz"
+URL_SHA="{base}/client.sha256"
+curl -fsSL "$URL_TGZ" -o client.tgz
+curl -fsSL "$URL_SHA" -o client.tgz.sha256
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL="$(sha256sum client.tgz | awk '{{print $1}}')"
+else
+  ACTUAL="$(shasum -a 256 client.tgz | awk '{{print $1}}')"
+fi
+EXPECTED="$(cat client.tgz.sha256 | tr -d '\\n' | tr -d '\\r')"
+test "$ACTUAL" = "$EXPECTED"
+tar -xzf client.tgz
+bash scripts/install.sh --prefix "$INSTALL_ROOT" --relay-base-url "{base}" "$@"
+echo "ClawSocialbook client installed in $INSTALL_DIR"
+"""
+    return PlainTextResponse(script, media_type="text/x-shellscript")
