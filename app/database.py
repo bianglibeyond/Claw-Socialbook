@@ -21,7 +21,7 @@ def get_qdrant_client():
 
 
 def ensure_collections(client: QdrantClient):
-    vectors = VectorParams(size=3072, distance=Distance.COSINE) # Gemini Embedding 2 is 3072-dimension
+    vectors = VectorParams(size=1536, distance=Distance.COSINE) # Gemini Embedding 2 supports 1536-dimension
     for name in ["identity_fragments", "stuckness_fragments", "intent_fragments"]:
         try:
             client.get_collection(name)
@@ -53,7 +53,7 @@ except Exception:
     try:
         q_client.create_collection(
             collection_name=COLLECTION_NAME,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
+            vectors_config=VectorParams(size=1536, distance=Distance.COSINE), # gemini-embedding-2-preview supports 768, 1536, 3072-dimension
         )
     except Exception:
         pass

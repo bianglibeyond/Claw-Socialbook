@@ -86,7 +86,8 @@ class Fragment(BaseModel):
     protocol_version: Protocol_Version = Protocol_Version.V_2026_03_21
     fragment_id: uuid.UUID = Field(default_factory=uuid.uuid4)
 
-    # Core Vector Data (1536 for Gemini Embedding 2 second best performanc)
+    # Core Vector Data (1536 for Gemini Embedding 2 second best performance)
+    # To date 2026-03-29, gemini-embedding-2-preview supports 768, 1536, 3072-dimension
     vector: List[float] = Field(..., min_items=1536, max_items=1536)
     hint: str # as user's information is not stored by the server, this hint helps the user's claw remember what information this fragment is about
 
