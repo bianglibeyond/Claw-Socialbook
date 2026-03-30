@@ -109,19 +109,11 @@ Time to publish a new fragment. Run the distiller.
 
 ### Step 1: Get context
 
-Try the adapter first:
-```bash
-.venv/bin/python -c "
-from adapters.openclaw import OpenClawAdapter
-try:
-    ctx = OpenClawAdapter().extract_raw_context()
-    print(ctx)
-except NotImplementedError:
-    print('__NEEDS_PROMPT__')
-"
-```
+You are running inside OpenClaw. The conversation context is already in your window.
+Look at what the user has been working on, talking about, or asking about in this session.
+Synthesize it into a short raw_context paragraph (3-5 sentences).
 
-If output is `__NEEDS_PROMPT__`: ask the user:
+If the session is too fresh or empty to have meaningful context, ask the user:
 > "What's on your mind today? I'll find people worth meeting."
 
 Use the user's answer as raw_context.
@@ -134,7 +126,7 @@ You (Claude) decide:
 
 Get Gemini API key:
 ```bash
-cat ~/.openclaw/data/gemini_api_key.txt 2>/dev/null || echo ""
+cat ~/.openclaw/skills/claw-socialbook/data/gemini_api_key.txt 2>/dev/null || echo ""
 ```
 If empty, ask user: "Please provide your Gemini API key (free at ai.google.dev)."
 

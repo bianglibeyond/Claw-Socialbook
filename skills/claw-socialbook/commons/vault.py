@@ -6,8 +6,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-VAULT_PATH = Path.home() / ".openclaw" / "data" / "claw-socialbook.db"
-INBOX_PATH = Path.home() / ".openclaw" / "data" / "inbox"
+_SKILL_ROOT = Path(__file__).resolve().parents[1]
+VAULT_PATH = _SKILL_ROOT / "data" / "claw-socialbook.db"
+INBOX_PATH = _SKILL_ROOT / "data" / "inbox"
 
 
 def _conn(path: Path = VAULT_PATH) -> sqlite3.Connection:

@@ -27,7 +27,8 @@ from commons import vault
 
 def _heartbeat_due(profile: dict) -> bool:
     last = profile.get("last_heartbeat_at")
-    interval_h = int(profile.get("heartbeat_interval_hours") or 24)
+    raw = profile.get("heartbeat_interval_hours")
+    interval_h = int(raw) if raw is not None else 24
     if interval_h == 0:
         return True  # dev mode: always fire
     if not last:

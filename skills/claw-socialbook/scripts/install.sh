@@ -24,7 +24,7 @@ if [[ -z "$RELAY_BASE_URL" ]]; then
 fi
 
 SKILL_DIR="$PREFIX/skills/claw-socialbook"
-DATA_DIR="$PREFIX/data"
+DATA_DIR="$SKILL_DIR/data"
 INBOX_DIR="$DATA_DIR/inbox"
 
 mkdir -p "$SKILL_DIR" "$DATA_DIR" "$INBOX_DIR"
@@ -45,7 +45,7 @@ fi
 echo ""
 echo "Claw Socialbook installed successfully."
 echo "  Skill dir : $SKILL_DIR"
-echo "  Data dir  : $DATA_DIR"
+echo "  Data dir  : $SKILL_DIR/data"
 echo "  Relay URL : $RELAY_BASE_URL"
 echo ""
 echo "Next: open your claw and it will walk you through first-time setup."
