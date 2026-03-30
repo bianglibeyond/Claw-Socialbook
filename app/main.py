@@ -277,16 +277,22 @@ async def health():
     return {"qdrant": q, "redis": r}
 
 
+_client_tgz_cache: bytes | None = None
+
 def _make_client_tgz() -> bytes:
+    global _client_tgz_cache
+    if _client_tgz_cache is not None:
+        return _client_tgz_cache
     root = Path(__file__).resolve().parents[1] / "skills" / "claw-socialbook"
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-        for p in root.rglob("*"):
+        for p in sorted(root.rglob("*")):  # sorted for determinism
             if p.is_file():
                 rel = p.relative_to(root)
                 tar.add(str(p), arcname=str(rel))
     buf.seek(0)
-    return buf.read()
+    _client_tgz_cache = buf.read()
+    return _client_tgz_cache
 
 
 @app.get("/client.tgz")

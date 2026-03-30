@@ -23,7 +23,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from commons import vault, crypto
 from commons.schema import MatchNature, Language, SocialAPP
-from adapters.openclaw import OpenClawAdapter
 
 
 EMBEDDING_MODEL = "models/text-embedding-004"
