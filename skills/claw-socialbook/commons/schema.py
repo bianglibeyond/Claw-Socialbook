@@ -1,3 +1,4 @@
+# Mirrors app/schemas.py at protocol version 2026-03-21. Update both when protocol changes.
 from datetime import timezone
 import uuid
 import base64
