@@ -23,19 +23,22 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from commons import vault
-from commons.schema import CURRENT_VERSION
 
 _SKILL_ROOT = Path(__file__).resolve().parent
 
 
 def _check_for_update(relay_base_url: str) -> bool:
-    """Return True if relay has a newer version than this install. Non-fatal on error."""
+    """Return True if relay has a newer build than this install. Non-fatal on error."""
     try:
         import urllib.request
-        url = relay_base_url.rstrip("/") + "/version"
+        local_sha_file = _SKILL_ROOT / "client.tgz.sha256"
+        if not local_sha_file.exists():
+            return False
+        local_sha = local_sha_file.read_text().strip()
+        url = relay_base_url.rstrip("/") + "/client.sha256"
         with urllib.request.urlopen(url, timeout=5) as resp:
-            relay_version = resp.read().decode().strip()
-        return relay_version != CURRENT_VERSION
+            relay_sha = resp.read().decode().strip()
+        return relay_sha != local_sha
     except Exception:
         return False
 

@@ -10,7 +10,6 @@ import os
 import hashlib
 from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
 from .database import q_client, r_client, COLLECTION_NAME
-from .schemas import CURRENT_VERSION
 from .schemas import (
     FragmentPublishRequest,
     FragmentPublishResponse,
@@ -257,11 +256,6 @@ async def poll_all_mailbox(req: MailboxPollAllRequest):
         items.append(mb)
     return {"mailboxes": items}
 
-
-
-@app.get("/version")
-async def version():
-    return PlainTextResponse(CURRENT_VERSION + "\n", media_type="text/plain")
 
 
 @app.get("/health")
