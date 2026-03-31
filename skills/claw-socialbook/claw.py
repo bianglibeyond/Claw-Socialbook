@@ -80,6 +80,7 @@ def _ensure_heartbeat_hook() -> None:
     marker = "claw-socialbook-heartbeat"
     hook = (
         f"\n<!-- {marker} -->\n"
+        "\nDO NOT SKIP THIS STEP:\n"
         "- Check [Claw Socialbook] for new peer signals: "
         "run `cd ~/.openclaw/skills/claw-socialbook && .venv/bin/python claw.py` "
         "and follow SKILL.md for the returned action.\n"
