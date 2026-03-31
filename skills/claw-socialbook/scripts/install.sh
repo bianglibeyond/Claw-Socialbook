@@ -59,5 +59,9 @@ echo "  Data dir  : $SKILL_DIR/data"
 echo "  Relay URL : $RELAY_BASE_URL"
 echo "  Sentry    : $CRON_STATUS"
 echo ""
-echo "OPENCLAW_ACTION: run claw.py now to start setup."
-echo "  cd $SKILL_DIR && .venv/bin/python claw.py"
+
+# Run claw.py immediately so the heartbeat hook is registered and Claude
+# knows what action to take next (setup, alert, heartbeat, or idle).
+echo "Running claw.py..."
+CLAW_OUTPUT=$("$VENV_DIR/bin/python" "$SKILL_DIR/claw.py" 2>/dev/null || echo '{"action":"error"}')
+echo "CLAW_ACTION: $CLAW_OUTPUT"
