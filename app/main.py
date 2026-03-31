@@ -285,9 +285,10 @@ def _make_client_tgz() -> bytes:
         return _client_tgz_cache
     root = Path(__file__).resolve().parents[1] / "skills" / "claw-socialbook"
     buf = io.BytesIO()
+    _EXCLUDE = {"__pycache__", ".pytest_cache", ".venv", "data", ".git"}
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
         for p in sorted(root.rglob("*")):  # sorted for determinism
-            if p.is_file():
+            if p.is_file() and not any(part in _EXCLUDE for part in p.parts):
                 rel = p.relative_to(root)
                 tar.add(str(p), arcname=str(rel))
     buf.seek(0)
