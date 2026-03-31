@@ -25,20 +25,21 @@ from commons import vault, crypto
 from commons.schema import MatchNature, Language, SocialAPP
 
 
-EMBEDDING_MODEL = "models/text-embedding-004"
+EMBEDDING_MODEL = "gemini-embedding-exp-03-07"
 EMBEDDING_DIM = 1536
 
 
 def _embed(text: str, api_key: str) -> list[float]:
     """Embed text using Gemini. Returns 1536-dim vector."""
-    import google.generativeai as genai
-    genai.configure(api_key=api_key)
-    result = genai.embed_content(
+    from google import genai
+    from google.genai import types
+    client = genai.Client(api_key=api_key)
+    result = client.models.embed_content(
         model=EMBEDDING_MODEL,
-        content=text,
-        output_dimensionality=EMBEDDING_DIM,
+        contents=text,
+        config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIM),
     )
-    return result["embedding"]
+    return list(result.embeddings[0].values)
 
 
 def run(

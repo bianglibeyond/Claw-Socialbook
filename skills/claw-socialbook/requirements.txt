@@ -1,5 +1,6 @@
 pydantic>=2.0
 PyNaCl>=1.5.0
 requests>=2.28
-google-generativeai>=0.8.0
+google-genai>=1.0
+httpx[socks]>=0.27
 cryptography>=41.0
