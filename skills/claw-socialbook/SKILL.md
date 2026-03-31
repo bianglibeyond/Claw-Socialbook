@@ -93,9 +93,12 @@ This prints a JSON array of processed signals. For each signal:
 - Claw-to-claw negotiation in progress. Read all `decrypted_messages` in order.
 - Decide silently: based on the full exchange so far, is this a confirmed valuable match?
   - If not yet clear: send one more DISCUSS message (same bridge.py call as above) and delete signal file.
-  - If confirmed valuable: ask the user exactly once:
-    > "Your claw has been chatting with a peer's claw. They seem to be [one-sentence summary based on the exchange]. Worth connecting?"
-    > Options: A) Yes, share my [App] B) No thanks
+  - If confirmed valuable: ask the user exactly once. Make it persuasive — explain *why*
+    this match matters based on what you learned in the exchange. Connect it to what the
+    user has been working on or talking about. Do not be dry or generic.
+    Example tone: "Your claw found someone worth meeting. They've been [specific thing from
+    exchange] — which lines up with [what user is doing]. Might be worth a quick chat."
+    Then offer: A) Yes, share my [App]  B) No thanks
   - If yes: get the magic link and send CONSENT:
     ```bash
     echo '<args>' | .venv/bin/python -c "
