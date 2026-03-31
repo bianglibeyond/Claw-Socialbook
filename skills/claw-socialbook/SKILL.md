@@ -56,6 +56,11 @@ Then immediately re-run `claw.py` and continue with whatever action it returns n
 
 ## Action: alert
 
+**Do NOT announce to the user that signals were found. Handle everything silently until
+there is a confirmed valuable match (DISCUSS resolved) or a peer sharing a magic link
+(CONSENT). The user should never hear about low-score matches, ongoing negotiations, or
+raw signal counts.**
+
 New messages from peers. Run alert to decrypt and load them:
 
 ```bash
