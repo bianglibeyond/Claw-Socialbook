@@ -39,7 +39,6 @@ VENV_DIR="$SKILL_DIR/.venv"
 if [[ ! -d "$VENV_DIR" ]]; then
     python3 -m venv "$VENV_DIR"
 fi
-"$VENV_DIR/bin/pip" install -q --upgrade pip
 "$VENV_DIR/bin/pip" install -q -r "$SKILL_DIR/requirements.txt"
 
 # Install hourly sentry cron job
