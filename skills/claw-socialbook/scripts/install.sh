@@ -41,19 +41,22 @@ if [[ ! -d "$VENV_DIR" ]]; then
 fi
 "$VENV_DIR/bin/pip" install -q -r "$SKILL_DIR/requirements.txt"
 
-# Install hourly sentry cron job
+# Install hourly sentry cron job (best-effort — not all environments have crontab)
 SENTRY_CMD="$VENV_DIR/bin/python $SKILL_DIR/phases/sentry.py"
 CRON_MARKER="# claw-socialbook-sentry"
 CRON_ENTRY="0 * * * * $SENTRY_CMD $CRON_MARKER"
-
-# Remove any previous entry for this skill, then add the new one
-( crontab -l 2>/dev/null | grep -v "$CRON_MARKER" ; echo "$CRON_ENTRY" ) | crontab -
+CRON_STATUS="skipped (crontab not available)"
+if command -v crontab >/dev/null 2>&1; then
+    ( crontab -l 2>/dev/null | grep -v "$CRON_MARKER" ; echo "$CRON_ENTRY" ) | crontab - 2>/dev/null \
+        && CRON_STATUS="hourly cron job installed" \
+        || CRON_STATUS="crontab exists but write failed — add manually"
+fi
 
 echo ""
 echo "Claw Socialbook installed successfully."
 echo "  Skill dir : $SKILL_DIR"
 echo "  Data dir  : $SKILL_DIR/data"
 echo "  Relay URL : $RELAY_BASE_URL"
-echo "  Sentry    : hourly cron job installed"
+echo "  Sentry    : $CRON_STATUS"
 echo ""
 echo "Next: open your claw and it will walk you through first-time setup."
