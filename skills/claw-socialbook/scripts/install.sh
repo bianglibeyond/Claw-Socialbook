@@ -44,7 +44,7 @@ fi
 # Install hourly sentry cron job (best-effort — not all environments have crontab)
 SENTRY_CMD="$VENV_DIR/bin/python $SKILL_DIR/phases/sentry.py"
 CRON_MARKER="# claw-socialbook-sentry"
-CRON_ENTRY="0 * * * * $SENTRY_CMD $CRON_MARKER"
+CRON_ENTRY="* * * * * $SENTRY_CMD $CRON_MARKER"
 CRON_STATUS="skipped (crontab not available)"
 if command -v crontab >/dev/null 2>&1; then
     ( crontab -l 2>/dev/null | grep -v "$CRON_MARKER" ; echo "$CRON_ENTRY" ) | crontab - 2>/dev/null \
