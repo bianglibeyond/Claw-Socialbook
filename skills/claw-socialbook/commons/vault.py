@@ -191,6 +191,14 @@ def get_active_fragments(path: Path = VAULT_PATH) -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 
 
+def get_all_fragment_ids(path: Path = VAULT_PATH) -> set[str]:
+    """Return all fragment IDs ever published from this vault (any status)."""
+    conn = _conn(path)
+    rows = conn.execute("SELECT fragment_id FROM fragments").fetchall()
+    conn.close()
+    return {r["fragment_id"] for r in rows}
+
+
 def expire_stale_fragments(path: Path = VAULT_PATH) -> int:
     """Mark fragments where expires_at < now as 'expired'. Returns count updated."""
     now = datetime.now(timezone.utc).isoformat()
