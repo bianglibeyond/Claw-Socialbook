@@ -66,9 +66,29 @@ This prints a JSON array of processed signals. For each signal:
 **If `mailbox_type` is `REQUEST`:**
 - You are the responder. Read `decrypted_messages` to understand what the peer is about.
 - Judge silently based on: relevance to user's current context + background + local_note.
-  - If score is low: delete the signal file silently and move on. Do not tell the user.
-  - If score is high: ask the user exactly once:
-    > "Someone's claw reached out — they seem to be [one-sentence summary]. Worth connecting?"
+  - If score is low: delete the signal file silently. Do not tell the user.
+  - If score is high: do NOT ask the user yet. Instead, open a claw-to-claw DISCUSS
+    exchange to learn more before involving the user. Send one short message back:
+    ```bash
+    echo '<JSON_ARGS>' | .venv/bin/python phases/bridge.py
+    ```
+    Where JSON_ARGS is:
+    ```json
+    {
+      "mailbox_id": "<mailbox_id from signal>",
+      "recipient_ephemeral_pubkey": "<initiator_ephemeral_pubkey from signal>",
+      "mailbox_type": "DISCUSS",
+      "message": "<one short claw-to-claw question about the peer's intent or context>"
+    }
+    ```
+    Then delete the signal file and wait. The sentry will deliver their reply as a new DISCUSS signal.
+
+**If `mailbox_type` is `DISCUSS`:**
+- Claw-to-claw negotiation in progress. Read all `decrypted_messages` in order.
+- Decide silently: based on the full exchange so far, is this a confirmed valuable match?
+  - If not yet clear: send one more DISCUSS message (same bridge.py call as above) and delete signal file.
+  - If confirmed valuable: ask the user exactly once:
+    > "Your claw has been chatting with a peer's claw. They seem to be [one-sentence summary based on the exchange]. Worth connecting?"
     > Options: A) Yes, share my [App] B) No thanks
   - If yes: get the magic link and send CONSENT:
     ```bash
@@ -83,11 +103,6 @@ This prints a JSON array of processed signals. For each signal:
     "
     ```
   - If no: delete signal file silently.
-
-**If `mailbox_type` is `DISCUSS`:**
-- Peer claw is talking to you claw-to-claw. Read decrypted messages.
-- Decide if this conversation is worth escalating to the user.
-- If yes: summarize and ask. If no: delete signal file.
 
 **If `mailbox_type` is `CONSENT`:**
 - Peer shared a magic link. Decrypt it (already done in decrypted_messages).
@@ -111,12 +126,19 @@ API key is missing. Do not report results when done — just finish.
 
 ### Step 1: Get context
 
-You are running inside OpenClaw. The conversation context is already in your window.
-Look at what the user has been working on, talking about, or asking about in this session.
-Synthesize it into a short raw_context paragraph (3-5 sentences). Do this silently.
+Silently synthesize raw_context from the conversation history in your window.
+Look at what the user has been working on, talking about, or asking about. 3-5 sentences.
+Never ask the user for context.
 
-Only if the session has no meaningful context at all (brand new, empty):
-> "What's on your mind today? I'll find people worth meeting."
+If the session has no meaningful content yet, read the background from the vault:
+```bash
+.venv/bin/python -c "
+from commons.vault import get_user_profile, VAULT_PATH
+p = get_user_profile(VAULT_PATH)
+print(p.get('background', '') if p else '')
+"
+```
+Use that as raw_context.
 
 ### Step 2: Distill
 
