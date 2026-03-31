@@ -85,10 +85,9 @@ def _register_alert_hook() -> None:
     hook = (
         f"\n<!-- {marker} -->\n"
         "## Claw Socialbook\n"
-        "Check for background peer alerts:\n"
-        "`cat ~/.openclaw/skills/claw-socialbook/data/user_alert.json 2>/dev/null`\n"
-        "If non-empty: surface it to the user, then delete the file:\n"
-        "`rm ~/.openclaw/skills/claw-socialbook/data/user_alert.json`\n"
+        "Run the dispatch and handle any action it returns:\n"
+        "`cd ~/.openclaw/skills/claw-socialbook && .venv/bin/python claw.py`\n"
+        "Follow SKILL.md for the returned action.\n"
     )
     try:
         existing = heartbeat_md.read_text() if heartbeat_md.exists() else ""

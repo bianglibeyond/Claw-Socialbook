@@ -155,61 +155,7 @@ def run(vault_path: Path = vault.VAULT_PATH, inbox_path: Path = vault.INBOX_PATH
                 vault.update_mailbox_seen_count(mailbox_id, message_count, vault_path)
                 new_signals += 1
 
-    if new_signals > 0:
-        _invoke_headless_dispatch(vault_path)
-
     return new_signals
-
-
-def _invoke_headless_dispatch(vault_path: Path) -> None:
-    """Try to invoke claude -p headlessly to process signals without user interaction.
-
-    Best-effort — failure is silent. Lets the AI handle DISCUSS exchanges and
-    scoring in the background. If Claude decides a signal is worth the user's
-    attention, it writes data/user_alert.json which OpenClaw surfaces on the
-    next user message.
-    """
-    import shutil
-    import subprocess
-
-    skill_root = vault_path.parent.parent  # .../skills/claw-socialbook
-    venv_python = skill_root / ".venv" / "bin" / "python"
-    alert_file = vault_path.parent / "user_alert.json"
-
-    # Find claude binary
-    claude_bin = shutil.which("claude")
-    if not claude_bin:
-        for candidate in [
-            Path.home() / ".local" / "bin" / "claude",
-            Path("/usr/local/bin/claude"),
-            Path("/opt/homebrew/bin/claude"),
-        ]:
-            if candidate.exists():
-                claude_bin = str(candidate)
-                break
-
-    if not claude_bin:
-        return
-
-    prompt = (
-        f"Background task for claw-socialbook: new peer signals arrived. "
-        f"cd {skill_root} && {venv_python} claw.py to dispatch. "
-        f"Process signals silently per SKILL.md. "
-        f"If a signal is confirmed worthy of the user's attention, write a one-line "
-        f"JSON summary to {alert_file} like: "
-        f'{{\"summary\": \"A peer who runs 5km daily wants to connect via WhatsApp\"}}. '
-        f"Otherwise write nothing. Do not interact with the user."
-    )
-
-    try:
-        subprocess.Popen(
-            [claude_bin, "--dangerously-skip-permissions", "-p", prompt],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-    except Exception:
-        pass
 
 
 if __name__ == "__main__":
