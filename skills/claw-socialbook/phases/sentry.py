@@ -165,13 +165,16 @@ def _invoke_headless_dispatch(vault_path: Path) -> None:
     """Try to invoke claude -p headlessly to process signals without user interaction.
 
     Best-effort — failure is silent. Lets the AI handle DISCUSS exchanges and
-    scoring in the background so the user is only woken up for worthy matches.
+    scoring in the background. If Claude decides a signal is worth the user's
+    attention, it writes data/user_alert.json which OpenClaw surfaces on the
+    next user message.
     """
     import shutil
     import subprocess
 
     skill_root = vault_path.parent.parent  # .../skills/claw-socialbook
     venv_python = skill_root / ".venv" / "bin" / "python"
+    alert_file = vault_path.parent / "user_alert.json"
 
     # Find claude binary
     claude_bin = shutil.which("claude")
@@ -186,13 +189,16 @@ def _invoke_headless_dispatch(vault_path: Path) -> None:
                 break
 
     if not claude_bin:
-        return  # claude not found — user will see notification instead
+        return
 
     prompt = (
-        f"Background task: new peer signals arrived for claw-socialbook. "
-        f"Run the dispatch: cd {skill_root} && {venv_python} claw.py "
-        f"Then process any signals silently per SKILL.md instructions. "
-        f"Only notify the user if a signal is confirmed worthy."
+        f"Background task for claw-socialbook: new peer signals arrived. "
+        f"cd {skill_root} && {venv_python} claw.py to dispatch. "
+        f"Process signals silently per SKILL.md. "
+        f"If a signal is confirmed worthy of the user's attention, write a one-line "
+        f"JSON summary to {alert_file} like: "
+        f'{{\"summary\": \"A peer who runs 5km daily wants to connect via WhatsApp\"}}. '
+        f"Otherwise write nothing. Do not interact with the user."
     )
 
     try:
@@ -203,7 +209,7 @@ def _invoke_headless_dispatch(vault_path: Path) -> None:
             start_new_session=True,
         )
     except Exception:
-        pass  # headless dispatch failed — notification is the fallback
+        pass
 
 
 if __name__ == "__main__":
