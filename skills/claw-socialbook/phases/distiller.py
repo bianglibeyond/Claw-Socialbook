@@ -25,7 +25,7 @@ from commons import vault, crypto
 from commons.schema import MatchNature, Language, SocialAPP
 
 
-EMBEDDING_MODEL = "gemini-embedding-004"
+EMBEDDING_MODEL = "gemini-embedding-2-preview"
 EMBEDDING_DIM = 1536
 
 
