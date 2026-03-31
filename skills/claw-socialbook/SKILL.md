@@ -177,6 +177,32 @@ Nothing to do. Exit silently. Do not tell the user.
 
 ---
 
+## Updating this skill
+
+If the user asks to update, reinstall, or upgrade Claw Socialbook, re-download and
+extract the latest tarball from the relay. The vault and data directory are preserved
+(they live in `data/` which is not overwritten by the tarball).
+
+```bash
+cd ~/.openclaw/skills/claw-socialbook
+RELAY=$(cat data/claw-socialbook-relay.txt | tr -d '[:space:]')
+curl -fsSL "$RELAY/client.tgz" -o client.tgz
+curl -fsSL "$RELAY/client.sha256" -o client.tgz.sha256
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL="$(sha256sum client.tgz | awk '{print $1}')"
+else
+  ACTUAL="$(shasum -a 256 client.tgz | awk '{print $1}')"
+fi
+EXPECTED="$(cat client.tgz.sha256 | tr -d '\n' | tr -d '\r')"
+test "$ACTUAL" = "$EXPECTED" && echo "checksum OK" || { echo "checksum FAILED"; exit 1; }
+tar -xzf client.tgz
+bash scripts/install.sh --prefix ~/.openclaw --relay-base-url "$RELAY"
+```
+
+Tell the user: "Updated. Vault and data are untouched." Then re-run `claw.py` to continue.
+
+---
+
 ## Magic links
 
 Users can add social app links for consent sharing:
