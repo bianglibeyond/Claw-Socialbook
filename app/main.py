@@ -38,16 +38,15 @@ app = FastAPI(title="ClawSocialbook Blind Relay")
 async def publish(fragment: FragmentPublishRequest):
     fragment_model = Fragment(
         protocol_version=fragment.protocol_version,
-        # fragment_id=uuid.uuid4(),
         vector=fragment.vector,
         hint=fragment.hint,
         fragment_type=fragment.fragment_type,
         match_threshold=fragment.match_threshold,
+        user_id=fragment.user_id,
         ephemeral_pubkey=fragment.ephemeral_pubkey,
         social_apps=fragment.social_apps,
         languages=fragment.languages,
         region=fragment.region,
-        # creation_time=datetime.now(timezone.utc),
         ttl_hours=24,
         did_match_history=[],
         non_match_history=[],
@@ -64,6 +63,7 @@ async def publish(fragment: FragmentPublishRequest):
                     "hint": fragment_model.hint,
                     "fragment_type": fragment_model.fragment_type.value,
                     "match_threshold": fragment_model.match_threshold,
+                    "user_id": fragment_model.user_id,
                     "ephemeral_pubkey": fragment_model.ephemeral_pubkey,
                     "languages": [lang.value for lang in fragment_model.languages],
                     "social_apps": [app.value for app in fragment_model.social_apps],
@@ -82,6 +82,7 @@ async def publish(fragment: FragmentPublishRequest):
         hint=fragment_model.hint,
         fragment_type=fragment_model.fragment_type,
         match_threshold=fragment_model.match_threshold,
+        user_id=fragment_model.user_id,
         ephemeral_pubkey=fragment_model.ephemeral_pubkey,
         social_apps=fragment_model.social_apps,
         languages=fragment_model.languages,
@@ -102,17 +103,12 @@ async def publish(fragment: FragmentPublishRequest):
 @app.post("/match", response_model=FragmentMatchResponse)
 async def match(fragment: FragmentMatchRequest):
     query_filter = Filter(
-        must=[
-            # FieldCondition(
-            #     key="fragment_type",
-            #     match=MatchValue(value=fragment.fragment_type.value),
-            # )
-        ],
+        must=[],
         must_not=[
             FieldCondition(
-                key="ephemeral_pubkey",
-                match=MatchValue(value=fragment.ephemeral_pubkey),
-            )
+                key="user_id",
+                match=MatchValue(value=fragment.user_id),
+            ),
         ],
     )
     hits = []

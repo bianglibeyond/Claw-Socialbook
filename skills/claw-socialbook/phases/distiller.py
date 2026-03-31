@@ -65,6 +65,10 @@ def run(
     if not profile:
         return {"error": "vault not initialized"}
 
+    user_id = vault.get_master_pubkey(vault_path)
+    if not user_id:
+        return {"error": "master keypair not found — re-run setup"}
+
     # Generate ephemeral keypair for this fragment
     eph_priv, eph_pub = crypto.generate_keypair()
     eph_key_id = str(uuid.uuid4())
@@ -115,6 +119,7 @@ def run(
 
     return {
         "fragment_id": fragment_id,
+        "user_id": user_id,
         "ephemeral_key_id": eph_key_id,
         "ephemeral_pubkey": eph_pub_b64,
         "hint_encrypted": hint_encrypted,

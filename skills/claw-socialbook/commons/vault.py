@@ -148,6 +148,19 @@ def get_keypair(key_id: str, path: Path = VAULT_PATH) -> Optional[dict[str, Any]
     return dict(row) if row else None
 
 
+def get_master_pubkey(path: Path = VAULT_PATH) -> Optional[str]:
+    """Return the stable master public key as base64url string, or None if not set up."""
+    conn = _conn(path)
+    row = conn.execute(
+        "SELECT public_key FROM keys WHERE key_type = 'master' LIMIT 1"
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return None
+    import base64
+    return base64.urlsafe_b64encode(row["public_key"]).rstrip(b"=").decode()
+
+
 def get_keypair_for_fragment(fragment_id: str, path: Path = VAULT_PATH) -> Optional[dict[str, Any]]:
     conn = _conn(path)
     row = conn.execute(

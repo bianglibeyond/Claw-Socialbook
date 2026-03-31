@@ -38,6 +38,7 @@ class Protocol_Version(StrEnum):
     V_2026_03_21 = "2026-03-21"
     V_2026_03_31_1624 = "2026-03-31-1624"
     V_2026_03_31_1634 = "2026-03-31-1634"
+    V_2026_03_31_user_id = "2026-03-31-user-id"
 
 # Always the latest enum value — bump by adding a new Protocol_Version member above.
 CURRENT_VERSION: str = sorted(Protocol_Version)[-1]
@@ -99,8 +100,9 @@ class Fragment(BaseModel):
     # Match Logic
     fragment_type: MatchNature
     match_threshold: float = Field(default=0.85, ge=0.5, le=1.0)
-    
+
     # Identity & Encryption
+    user_id: str  # stable base64 master pubkey — groups all fragments from same installation
     ephemeral_pubkey: str # X25519 Public Key for the handshake
 
     # Discovery Constraints
@@ -135,8 +137,9 @@ class FragmentPublishRequest(BaseModel):
     # Match Logic
     fragment_type: MatchNature
     match_threshold: float = Field(default=0.85, ge=0.5, le=1.0)
-    
+
     # Identity & Encryption
+    user_id: str  # stable base64 master pubkey — groups all fragments from same installation
     ephemeral_pubkey: str # X25519 Public Key for the handshake
 
     # Discovery Constraints

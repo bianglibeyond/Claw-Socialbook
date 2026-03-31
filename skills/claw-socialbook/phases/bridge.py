@@ -140,6 +140,7 @@ def run(
         "hint": fragment["hint_encrypted"],  # opaque bytes — relay stores as-is
         "fragment_type": fragment_type,
         "match_threshold": 0.85,
+        "user_id": fragment["user_id"],
         "ephemeral_pubkey": fragment["ephemeral_pubkey"],
         "social_apps": fragment["social_apps"],
         "languages": fragment["languages"],
@@ -161,14 +162,10 @@ def run(
     vault.mark_heartbeat(vault_path)
 
     matches = publish_resp.get("matches", [])
-    own_fragment_ids = vault.get_all_fragment_ids(vault_path)
     outreach_sent = 0
     outreach_failed = 0
 
     for match in matches:
-        # Skip matches against our own fragments (relay doesn't know which are ours)
-        if str(match.get("responder_fragment_id", "")) in own_fragment_ids:
-            continue
         ok = _send_request(
             relay_base_url=relay_base_url,
             match=match,
