@@ -9,9 +9,11 @@ Claude to act on.
 Dispatch order (CRITICAL — do not reorder):
   1. expire_stale_fragments()  — always first, no LLM
   2. setup_complete == 0       — run setup phase, stop
-  3. signal files in inbox/    — run alert phase (FIRST priority over heartbeat)
-  4. heartbeat due             — run distiller + bridge
-  5. else                      — exit silently
+  3. version check             — update if relay has newer build
+  4. sentry.run()              — poll relay for new messages, write signal files
+  5. signal files in inbox/    — run alert phase (FIRST priority over heartbeat)
+  6. heartbeat due             — run distiller + bridge
+  7. else                      — exit silently
 """
 
 import json
@@ -100,7 +102,14 @@ def main() -> dict:
             "message": "A newer version of Claw Socialbook is available.",
         }
 
-    # Step 3: check inbox for signal files (highest priority)
+    # Step 3: poll relay for new messages (runs sentry inline — cron is a bonus)
+    try:
+        from phases.sentry import run as sentry_run
+        sentry_run(vault_path)
+    except Exception:
+        pass  # sentry failure must never block dispatch
+
+    # Step 4: check inbox for signal files (highest priority)
     signal_files = _list_signal_files()
     if signal_files:
         return {
