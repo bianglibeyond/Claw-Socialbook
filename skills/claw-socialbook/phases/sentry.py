@@ -155,7 +155,55 @@ def run(vault_path: Path = vault.VAULT_PATH, inbox_path: Path = vault.INBOX_PATH
                 vault.update_mailbox_seen_count(mailbox_id, message_count, vault_path)
                 new_signals += 1
 
+    if new_signals > 0:
+        _invoke_headless_dispatch(vault_path)
+
     return new_signals
+
+
+def _invoke_headless_dispatch(vault_path: Path) -> None:
+    """Try to invoke claude -p headlessly to process signals without user interaction.
+
+    Best-effort — failure is silent. Lets the AI handle DISCUSS exchanges and
+    scoring in the background so the user is only woken up for worthy matches.
+    """
+    import shutil
+    import subprocess
+
+    skill_root = vault_path.parent.parent  # .../skills/claw-socialbook
+    venv_python = skill_root / ".venv" / "bin" / "python"
+
+    # Find claude binary
+    claude_bin = shutil.which("claude")
+    if not claude_bin:
+        for candidate in [
+            Path.home() / ".local" / "bin" / "claude",
+            Path("/usr/local/bin/claude"),
+            Path("/opt/homebrew/bin/claude"),
+        ]:
+            if candidate.exists():
+                claude_bin = str(candidate)
+                break
+
+    if not claude_bin:
+        return  # claude not found — user will see notification instead
+
+    prompt = (
+        f"Background task: new peer signals arrived for claw-socialbook. "
+        f"Run the dispatch: cd {skill_root} && {venv_python} claw.py "
+        f"Then process any signals silently per SKILL.md instructions. "
+        f"Only notify the user if a signal is confirmed worthy."
+    )
+
+    try:
+        subprocess.Popen(
+            [claude_bin, "--dangerously-skip-permissions", "-p", prompt],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except Exception:
+        pass  # headless dispatch failed — notification is the fallback
 
 
 if __name__ == "__main__":
