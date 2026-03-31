@@ -148,6 +148,8 @@ def run(
     }
 
     try:
+        import time
+        t0 = time.time()
         resp = requests.post(
             f"{relay_base_url}/publish",
             json=publish_payload,
@@ -155,6 +157,7 @@ def run(
         )
         resp.raise_for_status()
         publish_resp = resp.json()
+        print(f"[bridge] publish took {time.time() - t0:.1f}s", file=sys.stderr)
     except Exception as e:
         # Relay call failed — do not update fragment status
         return {"error": f"publish failed: {e}"}

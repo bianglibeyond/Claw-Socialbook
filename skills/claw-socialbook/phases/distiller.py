@@ -31,14 +31,17 @@ EMBEDDING_DIM = 1536
 
 def _embed(text: str, api_key: str) -> list[float]:
     """Embed text using Gemini. Returns 1536-dim vector."""
+    import time
     from google import genai
     from google.genai import types
+    t0 = time.time()
     client = genai.Client(api_key=api_key)
     result = client.models.embed_content(
         model=EMBEDDING_MODEL,
         contents=text,
         config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIM),
     )
+    print(f"[distiller] embed took {time.time() - t0:.1f}s", file=sys.stderr)
     return list(result.embeddings[0].values)
 
 
