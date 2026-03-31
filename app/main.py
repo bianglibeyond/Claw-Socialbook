@@ -262,6 +262,16 @@ async def poll_all_mailbox(req: MailboxPollAllRequest):
 
 
 
+@app.get("/version")
+async def version():
+    version_file = Path(__file__).resolve().parents[1] / "skills" / "claw-socialbook" / "VERSION"
+    try:
+        v = version_file.read_text().strip()
+    except Exception:
+        v = "unknown"
+    return PlainTextResponse(v + "\n", media_type="text/plain")
+
+
 @app.get("/health")
 async def health():
     q = "ok"

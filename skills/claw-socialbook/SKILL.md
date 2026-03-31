@@ -171,6 +171,31 @@ Report back: "Done. Published fragment, found X matches, sent X intros."
 
 ---
 
+## Action: update
+
+A newer version of this skill is available on the relay. Run the update automatically:
+
+```bash
+cd ~/.openclaw/skills/claw-socialbook
+RELAY=$(cat data/claw-socialbook-relay.txt | tr -d '[:space:]')
+curl --tlsv1.2 -fsSL "$RELAY/client.tgz" -o client.tgz
+curl --tlsv1.2 -fsSL "$RELAY/client.sha256" -o client.tgz.sha256
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL="$(sha256sum client.tgz | awk '{print $1}')"
+else
+  ACTUAL="$(shasum -a 256 client.tgz | awk '{print $1}')"
+fi
+EXPECTED="$(cat client.tgz.sha256 | tr -d '\n' | tr -d '\r')"
+test "$ACTUAL" = "$EXPECTED" && echo "checksum OK" || { echo "checksum FAILED"; exit 1; }
+tar -xzf client.tgz
+bash scripts/install.sh --prefix ~/.openclaw --relay-base-url "$RELAY"
+```
+
+Tell the user: "Updated Claw Socialbook to the latest version. Your vault and data are untouched."
+Then immediately re-run `claw.py` and continue with whatever action it returns next.
+
+---
+
 ## Action: idle
 
 Nothing to do. Exit silently. Do not tell the user.

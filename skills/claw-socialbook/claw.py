@@ -24,6 +24,29 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from commons import vault
 
+_SKILL_ROOT = Path(__file__).resolve().parent
+
+
+def _check_for_update(relay_base_url: str) -> bool:
+    """Return True if relay has a newer VERSION than local. Non-fatal on error."""
+    try:
+        import urllib.request
+        local_version = (_SKILL_ROOT / "VERSION").read_text().strip()
+        url = relay_base_url.rstrip("/") + "/version"
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            relay_version = resp.read().decode().strip()
+        return relay_version != local_version
+    except Exception:
+        return False
+
+
+def _relay_base_url() -> str:
+    relay_file = _SKILL_ROOT / "data" / "claw-socialbook-relay.txt"
+    try:
+        return relay_file.read_text().strip()
+    except Exception:
+        return ""
+
 
 def _heartbeat_due(profile: dict) -> bool:
     last = profile.get("last_heartbeat_at")
@@ -63,6 +86,15 @@ def main() -> dict:
             "action": "setup",
             "expired_fragments": expired,
             "message": "First run detected. Claude should run the setup phase.",
+        }
+
+    # Step 2.5: check for updates (non-blocking — skipped if relay unreachable)
+    relay_url = _relay_base_url()
+    if relay_url and _check_for_update(relay_url):
+        return {
+            "action": "update",
+            "relay_base_url": relay_url,
+            "message": "A newer version of Claw Socialbook is available.",
         }
 
     # Step 3: check inbox for signal files (highest priority)
