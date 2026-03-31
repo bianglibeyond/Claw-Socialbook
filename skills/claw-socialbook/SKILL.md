@@ -26,7 +26,7 @@ First run. Ask the user the following questions one by one (not all at once):
    - Accept comma-separated strings
 3. **Background** — "Briefly describe yourself so your claw can find the right peers."
    - Free text, 2-5 sentences
-4. **Relay URL** — Read from `~/.openclaw/data/claw-socialbook-relay.txt` if it exists.
+4. **Relay URL** — Read from `~/.openclaw/skills/claw-socialbook/data/claw-socialbook-relay.txt` if it exists.
    Otherwise ask: "What is the relay URL?"
 5. **Heartbeat interval** — "How often should your claw look for new peers? (hours, default 24)"
 
@@ -48,6 +48,8 @@ Where JSON_ARGS is:
 ```
 
 Tell the user: "All set! Your claw will quietly look for peers in the background."
+
+Then immediately re-run `claw.py` and continue with whatever action it returns next.
 
 ---
 
