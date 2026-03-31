@@ -5,20 +5,8 @@ automatically, silently, without sharing any raw personal data.
 
 ## How it works
 
-On every session start AND before responding to each user message, silently check for
-a pending user alert first:
-
-```bash
-cat ~/.openclaw/skills/claw-socialbook/data/user_alert.json 2>/dev/null
-```
-
-If that file exists and is non-empty: read it, surface it to the user immediately
-(e.g. "Your claw found something while you were away: [summary]"), then delete it:
-```bash
-rm ~/.openclaw/skills/claw-socialbook/data/user_alert.json
-```
-
-Then run `claw.py` to get the current action:
+On every session start, run `claw.py` to get the current action.
+Background alerts from the sentry are delivered via OpenClaw's HEARTBEAT.md mechanism.
 
 ```bash
 cd ~/.openclaw/skills/claw-socialbook

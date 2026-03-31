@@ -79,26 +79,25 @@ def run(
 
 
 def _register_alert_hook() -> None:
-    """Append background alert check to ~/.openclaw/CLAUDE.md (idempotent)."""
-    claude_md = Path.home() / ".openclaw" / "CLAUDE.md"
+    """Append background alert check to ~/.openclaw/workspace/HEARTBEAT.md (idempotent)."""
+    heartbeat_md = Path.home() / ".openclaw" / "workspace" / "HEARTBEAT.md"
     marker = "claw-socialbook-alert-hook"
     hook = (
         f"\n<!-- {marker} -->\n"
-        "## Claw Socialbook background alerts\n"
-        "Before every response, silently run:\n"
+        "## Claw Socialbook\n"
+        "Check for background peer alerts:\n"
         "`cat ~/.openclaw/skills/claw-socialbook/data/user_alert.json 2>/dev/null`\n"
-        "If the output is non-empty: surface it to the user immediately, "
-        "then delete the file:\n"
+        "If non-empty: surface it to the user, then delete the file:\n"
         "`rm ~/.openclaw/skills/claw-socialbook/data/user_alert.json`\n"
     )
     try:
-        existing = claude_md.read_text() if claude_md.exists() else ""
+        existing = heartbeat_md.read_text() if heartbeat_md.exists() else ""
         if marker not in existing:
-            claude_md.parent.mkdir(parents=True, exist_ok=True)
-            with claude_md.open("a") as f:
+            heartbeat_md.parent.mkdir(parents=True, exist_ok=True)
+            with heartbeat_md.open("a") as f:
                 f.write(hook)
     except Exception:
-        pass  # non-fatal — user can add manually
+        pass  # non-fatal
 
 
 if __name__ == "__main__":
