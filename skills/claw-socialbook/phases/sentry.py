@@ -60,26 +60,37 @@ def run(vault_path: Path = vault.VAULT_PATH, inbox_path: Path = vault.INBOX_PATH
     if not relay_base_url:
         return 0
 
-    active_fragments = vault.get_active_fragments(vault_path)
-    if not active_fragments:
-        return 0
+    import base64
 
-    # Collect unique pubkeys to avoid duplicate polls
+    # Collect unique pubkeys to poll:
+    # 1. active fragments (for incoming new matches)
+    # 2. any open mailbox's my_pubkey (fragment may have been expired locally
+    #    but the mailbox is still live on the relay — e.g. a CONSENT in flight)
     seen_pubkeys: set[str] = set()
-    new_signals = 0
+    fragment_id_for_pubkey: dict[str, str] = {}
 
-    for fragment in active_fragments:
+    for fragment in vault.get_active_fragments(vault_path):
         fragment_id = fragment["fragment_id"]
         keypair = vault.get_keypair_for_fragment(fragment_id, vault_path)
         if not keypair:
             continue
-        import base64
-        pubkey_bytes = keypair["public_key"]
-        pubkey_b64 = base64.urlsafe_b64encode(pubkey_bytes).rstrip(b"=").decode()
-
-        if pubkey_b64 in seen_pubkeys:
-            continue
+        pubkey_b64 = base64.urlsafe_b64encode(keypair["public_key"]).rstrip(b"=").decode()
         seen_pubkeys.add(pubkey_b64)
+        fragment_id_for_pubkey[pubkey_b64] = fragment_id
+
+    for mb in vault.get_open_mailboxes(vault_path):
+        pubkey_b64 = mb.get("my_pubkey", "")
+        if pubkey_b64 and pubkey_b64 not in seen_pubkeys:
+            seen_pubkeys.add(pubkey_b64)
+            fragment_id_for_pubkey[pubkey_b64] = mb["my_fragment_id"]
+
+    if not seen_pubkeys:
+        return 0
+
+    new_signals = 0
+
+    for pubkey_b64 in seen_pubkeys:
+        fragment_id = fragment_id_for_pubkey[pubkey_b64]
 
         mailboxes = _poll_mailboxes(relay_base_url, pubkey_b64)
 

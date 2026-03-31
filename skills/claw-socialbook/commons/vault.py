@@ -279,6 +279,21 @@ def get_mailbox(mailbox_id: str, path: Path = VAULT_PATH) -> Optional[dict[str, 
     return d
 
 
+def get_open_mailboxes(path: Path = VAULT_PATH) -> list[dict[str, Any]]:
+    """Return all mailboxes that are not CLOSED or REJECT."""
+    conn = _conn(path)
+    rows = conn.execute(
+        "SELECT * FROM mailboxes WHERE mailbox_type NOT IN ('CLOSED', 'REJECT')"
+    ).fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        d = dict(r)
+        d["messages"] = json.loads(d.get("messages") or "[]")
+        result.append(d)
+    return result
+
+
 def update_mailbox_seen_count(mailbox_id: str, count: int, path: Path = VAULT_PATH) -> None:
     now = datetime.now(timezone.utc).isoformat()
     conn = _conn(path)
