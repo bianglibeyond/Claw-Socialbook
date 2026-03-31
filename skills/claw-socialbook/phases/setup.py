@@ -26,7 +26,7 @@ def run(
     regions: list[str],
     background: str,
     relay_base_url: str,
-    heartbeat_interval_hours: int = 24,
+    heartbeat_interval_hours: int = 6,
     vault_path: Path = vault.VAULT_PATH,
 ) -> dict:
     """Initialize the vault and user profile. Called once on first run.

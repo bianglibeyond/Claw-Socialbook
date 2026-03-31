@@ -54,7 +54,7 @@ def _relay_base_url() -> str:
 def _heartbeat_due(profile: dict) -> bool:
     last = profile.get("last_heartbeat_at")
     raw = profile.get("heartbeat_interval_hours")
-    interval_h = int(raw) if raw is not None else 24
+    interval_h = int(raw) if raw is not None else 6
     if interval_h == 0:
         return True  # dev mode: always fire
     if not last:
