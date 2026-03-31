@@ -10,6 +10,7 @@ import os
 import hashlib
 from qdrant_client.models import PointStruct, Filter, FieldCondition, MatchValue
 from .database import q_client, r_client, COLLECTION_NAME
+from .schemas import CURRENT_VERSION
 from .schemas import (
     FragmentPublishRequest,
     FragmentPublishResponse,
@@ -264,12 +265,7 @@ async def poll_all_mailbox(req: MailboxPollAllRequest):
 
 @app.get("/version")
 async def version():
-    version_file = Path(__file__).resolve().parents[1] / "skills" / "claw-socialbook" / "VERSION"
-    try:
-        v = version_file.read_text().strip()
-    except Exception:
-        v = "unknown"
-    return PlainTextResponse(v + "\n", media_type="text/plain")
+    return PlainTextResponse(CURRENT_VERSION + "\n", media_type="text/plain")
 
 
 @app.get("/health")

@@ -23,19 +23,19 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from commons import vault
+from commons.schema import CURRENT_VERSION
 
 _SKILL_ROOT = Path(__file__).resolve().parent
 
 
 def _check_for_update(relay_base_url: str) -> bool:
-    """Return True if relay has a newer VERSION than local. Non-fatal on error."""
+    """Return True if relay has a newer version than this install. Non-fatal on error."""
     try:
         import urllib.request
-        local_version = (_SKILL_ROOT / "VERSION").read_text().strip()
         url = relay_base_url.rstrip("/") + "/version"
         with urllib.request.urlopen(url, timeout=5) as resp:
             relay_version = resp.read().decode().strip()
-        return relay_version != local_version
+        return relay_version != CURRENT_VERSION
     except Exception:
         return False
 

@@ -36,6 +36,9 @@ class Language(StrEnum):
 class Protocol_Version(StrEnum):
     V_2026_03_21 = "2026-03-21"
 
+# Always the latest enum value — bump by adding a new Protocol_Version member above.
+CURRENT_VERSION: str = sorted(Protocol_Version)[-1]
+
 
 
 def validate_ephemeral_X25519_pubkey(v: str):
