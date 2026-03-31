@@ -75,18 +75,27 @@ def _list_signal_files(inbox_path: Path = vault.INBOX_PATH) -> list[str]:
 
 
 def _ensure_heartbeat_hook() -> None:
-    """Idempotent: inject claw-socialbook entry into OpenClaw's HEARTBEAT.md."""
+    """Idempotent: inject claw-socialbook checklist entry into OpenClaw's HEARTBEAT.md."""
     heartbeat_md = Path.home() / ".openclaw" / "workspace" / "HEARTBEAT.md"
-    marker = "claw-socialbook-alert-hook"
+    marker = "claw-socialbook-heartbeat"
     hook = (
         f"\n<!-- {marker} -->\n"
-        "## Claw Socialbook\n"
-        "Run the dispatch and handle any action it returns:\n"
-        "`cd ~/.openclaw/skills/claw-socialbook && .venv/bin/python claw.py`\n"
-        "Follow SKILL.md for the returned action.\n"
+        "- Check [Claw Socialbook] for new peer signals: "
+        "run `cd ~/.openclaw/skills/claw-socialbook && .venv/bin/python claw.py` "
+        "and follow SKILL.md for the returned action.\n"
     )
+    # Remove any old-format entry before writing the new one
+    old_marker = "claw-socialbook-alert-hook"
     try:
         existing = heartbeat_md.read_text() if heartbeat_md.exists() else ""
+        # Strip old entry if present
+        if old_marker in existing:
+            import re
+            existing = re.sub(
+                rf"\n<!-- {old_marker} -->.*?(?=\n<!-- |\Z)", "", existing, flags=re.DOTALL
+            )
+            heartbeat_md.write_text(existing)
+            existing = heartbeat_md.read_text()
         if marker not in existing:
             heartbeat_md.parent.mkdir(parents=True, exist_ok=True)
             with heartbeat_md.open("a") as f:
