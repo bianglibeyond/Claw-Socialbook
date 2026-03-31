@@ -38,6 +38,7 @@ class Protocol_Version(StrEnum):
     V_2026_03_31_1624 = "2026-03-31-1624"
     V_2026_03_31_1634 = "2026-03-31-1634"
     V_2026_03_31_user_id = "2026-03-31-user-id"
+    V_2026_03_31_no_crontab = "2026-03-31-no-crontab"
 
 # Always the latest enum value — bump by adding a new Protocol_Version member above.
 CURRENT_VERSION: str = sorted(Protocol_Version)[-1]
