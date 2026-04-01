@@ -105,22 +105,15 @@ def _ensure_heartbeat_hook() -> None:
         pass  # non-fatal
 
 
-def _find_python(skill_dir: Path) -> str:
-    """Return the best available Python binary in the skill venv."""
-    for candidate in ["venv11", "venv", ".venv"]:
-        p = skill_dir / candidate / "bin" / "python"
-        if p.exists():
-            return str(p)
-    return str(skill_dir / ".venv" / "bin" / "python")  # fallback
-
-
 def _ensure_openclaw_cron_job() -> None:
     """Register (or update) claw-socialbook poll job in OpenClaw's built-in cron."""
     import json as _json
+    import sys as _sys
     jobs_path = Path.home() / ".openclaw" / "cron" / "jobs.json"
     job_id = "claw-socialbook-poll"
     skill_dir = Path.home() / ".openclaw" / "skills" / "claw-socialbook"
-    python_bin = _find_python(skill_dir)
+    # Use the same Python that's running this script — already the correct venv
+    python_bin = _sys.executable
     job = {
         "id": job_id,
         "name": job_id,
