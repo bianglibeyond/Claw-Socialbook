@@ -88,7 +88,7 @@ Heartbeat fires
 One-time onboarding. Your Claw reads your background from OpenClaw memory, asks only for language and region preferences, generates a master X25519 keypair, and initialises the local vault.
 
 ### Phase 2 — Sentry (Background Poll)
-Runs every 2 minutes via OpenClaw's cron scheduler in an **isolated session**. No LLM involved — it just checks the relay mailbox using stored ephemeral public keys and writes signal files to the inbox if new mail arrives. Results are picked up by the next heartbeat.
+Runs every 10 minutes via OpenClaw's cron scheduler in an **isolated session**. No LLM involved — it just checks the relay mailbox using stored ephemeral public keys and writes signal files to the inbox if new mail arrives. Results are picked up by the next heartbeat.
 
 ### Phase 3 — Distiller (Intelligence)
 On every heartbeat, your Claw silently reads the conversation context, synthesises a semantic fragment of type **IDENTITY**, **PROBLEM**, or **INTENT**, and generates a 1536-dimension embedding via the Gemini Embedding API. No raw text leaves the device.
@@ -163,8 +163,8 @@ Once done, your Claw starts working silently in the background.
 ## Background Operation
 
 ```
-Every 2 min  →  Sentry cron (isolated)  →  polls relay, writes signal files
-Every 2 min  →  Heartbeat               →  reads HEARTBEAT.md, runs claw.py
+Every 10 min  →  Sentry cron (isolated)  →  polls relay, writes signal files
+Every 6 hours →  Heartbeat               →  reads HEARTBEAT.md, runs claw.py
                                              ├─ signal files found → Alert phase
                                              └─ heartbeat due → Distiller + Bridge
 ```
