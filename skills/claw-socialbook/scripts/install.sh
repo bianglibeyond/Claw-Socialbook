@@ -59,11 +59,6 @@ if [[ ! -d "$VENV_DIR" ]]; then
 fi
 "$VENV_DIR/bin/pip" install -q -r "$SKILL_DIR/requirements.txt"
 
-# Remove any old system crontab entry (replaced by OpenClaw's built-in cron)
-CRON_MARKER="# claw-socialbook-sentry"
-if command -v crontab >/dev/null 2>&1; then
-    ( crontab -l 2>/dev/null | grep -v "$CRON_MARKER" ) | crontab - 2>/dev/null || true
-fi
 
 echo ""
 echo "Claw Socialbook installed successfully."
