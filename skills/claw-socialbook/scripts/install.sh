@@ -41,14 +41,14 @@ if [[ ! -d "$VENV_DIR" ]]; then
 fi
 "$VENV_DIR/bin/pip" install -q -r "$SKILL_DIR/requirements.txt"
 
-# Install hourly sentry cron job (best-effort — not all environments have crontab)
+# Install per-minute sentry cron job (best-effort — not all environments have crontab)
 SENTRY_CMD="$VENV_DIR/bin/python $SKILL_DIR/phases/sentry.py"
 CRON_MARKER="# claw-socialbook-sentry"
 CRON_ENTRY="* * * * * $SENTRY_CMD $CRON_MARKER"
 CRON_STATUS="skipped (crontab not available)"
 if command -v crontab >/dev/null 2>&1; then
     ( crontab -l 2>/dev/null | grep -v "$CRON_MARKER" ; echo "$CRON_ENTRY" ) | crontab - 2>/dev/null \
-        && CRON_STATUS="hourly cron job installed" \
+        && CRON_STATUS="per-minute sentry cron installed" \
         || CRON_STATUS="crontab exists but write failed — add manually"
 fi
 
