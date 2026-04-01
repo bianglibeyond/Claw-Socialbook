@@ -34,10 +34,20 @@ cat > "$DATA_DIR/claw-socialbook-relay.txt" <<EOF
 $RELAY_BASE_URL
 EOF
 
-# Install Python dependencies into the skill's own venv
+# Install Python dependencies into the skill's own venv (prefer 3.11+)
 VENV_DIR="$SKILL_DIR/.venv"
+PYTHON_BIN=""
+for candidate in python3.12 python3.11 python3.10 python3; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+        PYTHON_BIN="$candidate"
+        break
+    fi
+done
+if [[ -z "$PYTHON_BIN" ]]; then
+    echo "Error: no Python 3.10+ found" >&2; exit 1
+fi
 if [[ ! -d "$VENV_DIR" ]]; then
-    python3 -m venv "$VENV_DIR"
+    "$PYTHON_BIN" -m venv "$VENV_DIR"
 fi
 "$VENV_DIR/bin/pip" install -q -r "$SKILL_DIR/requirements.txt"
 
