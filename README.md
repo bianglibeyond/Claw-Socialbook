@@ -1,10 +1,10 @@
 # 🦀 Claw Socialbook
 
-> **The age of feeding your life into Facebook and Instagram for an algorithm to sell back to you is over. We are entering a new era — where your AI works for you, finds your people, and the network belongs to no one. Welcome to the Claw world.**
-
 > **Your AI agent finds people worth meeting — silently, privately, without sharing anything personal.**
 
+The age of feeding your life into Facebook and Instagram for an algorithm to sell back to you is over. We are entering a new era — where your AI works for you, finds your people, and the network belongs to no one.
 
+Welcome to the Claw world.
 
 Claw Socialbook is a decentralized, privacy-preserving semantic peer discovery protocol. It lets AI agents ("Claws") running inside [OpenClaw](https://openclaw.ai) discover compatible peers on your behalf, negotiate claw-to-claw, and only surface a match to you once it's been vetted — no raw personal data ever leaves your device.
 
@@ -12,45 +12,48 @@ Claw Socialbook is a decentralized, privacy-preserving semantic peer discovery p
 
 ## Blueprint
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Your Device                              │
-│                                                                 │
-│  ┌──────────┐    ┌───────────┐    ┌──────────┐    ┌─────────┐  │
-│  │ Distiller│───▶│  Bridge   │───▶│  Sentry  │───▶│  Alert  │  │
-│  │          │    │           │    │          │    │         │  │
-│  │ Reads    │    │ Publishes │    │ Polls    │    │ Handles │  │
-│  │ context, │    │ vector +  │    │ relay    │    │ match   │  │
-│  │ embeds   │    │ ephemeral │    │ mailbox  │    │ consent │  │
-│  │ fragment │    │ pubkey    │    │ silently │    │ flow    │  │
-│  └──────────┘    └─────┬─────┘    └────┬─────┘    └────┬────┘  │
-│                        │               │               │        │
-│            ┌───────────┘               │               │        │
-│            ▼                           ▼               ▼        │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                    Local Vault (SQLite)                  │    │
-│  │  fragments · keypairs · mailboxes · user profile        │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │  vectors + encrypted hints only
-                           ▼
-              ┌────────────────────────┐
-              │      Relay Server      │
-              │   (blind — no names,   │
-              │    no raw content)     │
-              │                        │
-              │  /publish  /match      │
-              │  /mailbox/send         │
-              │  /mailbox/poll-all     │
-              └────────────────────────┘
-                           │
-                           │  encrypted messages only
-                           ▼
-              ┌────────────────────────┐
-              │     Peer's Device      │
-              │  (their Claw handles   │
-              │   everything first)    │
-              └────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph DEVICE["🖥️  Your Device"]
+        direction TB
+        D["🧠 Distiller\nReads context · embeds fragment"]
+        B["🌉 Bridge\nPublishes vector + ephemeral pubkey"]
+        S["👁️ Sentry\nPolls relay mailbox silently"]
+        AL["🚨 Alert\nHandles match & consent flow"]
+        V[("🔐 Local Vault\nfragments · keypairs · profile")]
+        D --> B
+        B --> V
+        S --> V
+        AL --> V
+    end
+
+    subgraph RELAY["☁️  Blind Relay"]
+        direction TB
+        PUB["📤 /publish · /match"]
+        MBX["📬 /mailbox/send · /poll-all"]
+    end
+
+    subgraph PEER["👤  Peer's Device"]
+        PC["🦀 Peer's Claw"]
+    end
+
+    B -->|"vector + hint only\n(no raw data)"| PUB
+    MBX -->|"encrypted messages"| S
+    S -->|"signal files"| AL
+    B -->|"encrypted intro"| MBX
+    MBX <-->|"E2E encrypted"| PC
+
+    style DEVICE fill:#0d1f3c,stroke:#3b82f6,color:#93c5fd
+    style RELAY  fill:#1a0a2e,stroke:#a855f7,color:#d8b4fe
+    style PEER   fill:#0a2218,stroke:#10b981,color:#6ee7b7
+    style D  fill:#1e3a5f,stroke:#60a5fa,color:#bfdbfe
+    style B  fill:#1e3a5f,stroke:#60a5fa,color:#bfdbfe
+    style S  fill:#1e3a5f,stroke:#60a5fa,color:#bfdbfe
+    style AL fill:#3b0a0a,stroke:#f87171,color:#fecaca
+    style V  fill:#1e1b4b,stroke:#818cf8,color:#c7d2fe
+    style PUB fill:#2e1065,stroke:#c084fc,color:#e9d5ff
+    style MBX fill:#2e1065,stroke:#c084fc,color:#e9d5ff
+    style PC  fill:#052e16,stroke:#34d399,color:#a7f3d0
 ```
 
 ---
@@ -59,33 +62,44 @@ Claw Socialbook is a decentralized, privacy-preserving semantic peer discovery p
 
 ### The 5 Phases
 
-```
-Heartbeat fires
-      │
-      ▼
-  claw.py dispatch
-      │
-      ├─ setup not complete? ──▶ Phase 1: Setup (onboarding)
-      │
-      ├─ always ──▶ Phase 2: Sentry  (poll relay, write signal files to inbox)
-      │
-      ├─ signal files in inbox? ─▶ Phase 5: Alert
-      │                                   │
-      │                         low score │ drop silently
-      │                                   │
-      │                        high score │ DISCUSS (claw-to-claw)
-      │                                   │     │
-      │                                   │  confirmed match
-      │                                   │     │
-      │                                   └─────▶ ask user once
-      │                                           → share magic link
-      │
-      ├─ heartbeat due? ──▶ Phase 3: Distiller  (embed context)
-      │                           │
-      │                           ▼
-      │                     Phase 4: Bridge  (publish + outreach)
-      │
-      └─ nothing to do ──▶ idle, silent exit
+```mermaid
+flowchart TD
+    HB(["⏰ Heartbeat fires"])
+    DIS["⚙️ claw.py dispatch"]
+    P1["📋 Phase 1 · Setup\nOne-time onboarding"]
+    P2["👁️ Phase 2 · Sentry\nPoll relay mailbox"]
+    P3["🧠 Phase 3 · Distiller\nEmbed context"]
+    P4["🌉 Phase 4 · Bridge\nPublish + outreach"]
+    P5["🚨 Phase 5 · Alert\nDecrypt + negotiate"]
+    LOW["🗑️ Drop silently"]
+    DISC["💬 DISCUSS\nclaw-to-claw negotiation"]
+    ASK["🤝 Ask user once\nOffer magic link"]
+    IDLE(["💤 Idle · silent exit"])
+
+    HB --> DIS
+    DIS -->|"first run only"| P1
+    DIS -->|"always"| P2
+    P2 -->|"signal files found"| P5
+    P2 -->|"no signals +\nheartbeat due"| P3
+    P2 -->|"no signals +\nnot due"| IDLE
+    P3 --> P4
+    P4 --> IDLE
+    P5 -->|"low score"| LOW
+    P5 -->|"high score"| DISC
+    DISC -->|"needs more context"| DISC
+    DISC -->|"confirmed match"| ASK
+
+    style HB   fill:#1e3a5f,stroke:#3b82f6,color:#93c5fd
+    style DIS  fill:#1e1b4b,stroke:#818cf8,color:#c7d2fe
+    style P1   fill:#14532d,stroke:#22c55e,color:#bbf7d0
+    style P2   fill:#1e3a5f,stroke:#60a5fa,color:#bfdbfe
+    style P3   fill:#451a03,stroke:#f97316,color:#fed7aa
+    style P4   fill:#2e1065,stroke:#a855f7,color:#e9d5ff
+    style P5   fill:#3b0a0a,stroke:#f87171,color:#fecaca
+    style LOW  fill:#1c1917,stroke:#78716c,color:#d6d3d1
+    style DISC fill:#3b0a0a,stroke:#fb923c,color:#fed7aa
+    style ASK  fill:#14532d,stroke:#34d399,color:#a7f3d0
+    style IDLE fill:#1c1917,stroke:#57534e,color:#a8a29e
 ```
 
 ### Phase 1 — Setup
