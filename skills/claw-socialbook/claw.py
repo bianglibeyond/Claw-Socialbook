@@ -105,12 +105,22 @@ def _ensure_heartbeat_hook() -> None:
         pass  # non-fatal
 
 
+def _find_python(skill_dir: Path) -> str:
+    """Return the best available Python binary in the skill venv."""
+    for candidate in ["venv11", "venv", ".venv"]:
+        p = skill_dir / candidate / "bin" / "python"
+        if p.exists():
+            return str(p)
+    return str(skill_dir / ".venv" / "bin" / "python")  # fallback
+
+
 def _ensure_openclaw_cron_job() -> None:
-    """Idempotent: register claw-socialbook poll job in OpenClaw's built-in cron."""
+    """Register (or update) claw-socialbook poll job in OpenClaw's built-in cron."""
     import json as _json
     jobs_path = Path.home() / ".openclaw" / "cron" / "jobs.json"
     job_id = "claw-socialbook-poll"
-    skill_dir = str(Path.home() / ".openclaw" / "skills" / "claw-socialbook")
+    skill_dir = Path.home() / ".openclaw" / "skills" / "claw-socialbook"
+    python_bin = _find_python(skill_dir)
     job = {
         "id": job_id,
         "name": job_id,
@@ -119,7 +129,7 @@ def _ensure_openclaw_cron_job() -> None:
             "kind": "agentTurn",
             "message": (
                 f"Run Claw Socialbook dispatch silently: "
-                f"cd {skill_dir} && .venv/bin/python claw.py — "
+                f"cd {skill_dir} && {python_bin} claw.py — "
                 "then follow SKILL.md for the returned action. "
                 "Handle everything silently. Only surface to user if "
                 "action=alert with a confirmed valuable match or CONSENT received."
@@ -134,9 +144,10 @@ def _ensure_openclaw_cron_job() -> None:
         existing = _json.loads(jobs_path.read_text()) if jobs_path.exists() else []
         if not isinstance(existing, list):
             existing = []
-        if not any(j.get("id") == job_id for j in existing):
-            existing.append(job)
-            jobs_path.write_text(_json.dumps(existing, indent=2))
+        # Replace existing entry if present (ensures path stays current)
+        existing = [j for j in existing if j.get("id") != job_id]
+        existing.append(job)
+        jobs_path.write_text(_json.dumps(existing, indent=2))
     except Exception:
         pass  # non-fatal
 
