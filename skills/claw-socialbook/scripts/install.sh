@@ -41,15 +41,10 @@ if [[ ! -d "$VENV_DIR" ]]; then
 fi
 "$VENV_DIR/bin/pip" install -q -r "$SKILL_DIR/requirements.txt"
 
-# Install per-minute sentry cron job (best-effort — not all environments have crontab)
-SENTRY_CMD="$VENV_DIR/bin/python $SKILL_DIR/phases/sentry.py"
+# Remove any old system crontab entry (replaced by OpenClaw's built-in cron)
 CRON_MARKER="# claw-socialbook-sentry"
-CRON_ENTRY="* * * * * $SENTRY_CMD $CRON_MARKER"
-CRON_STATUS="skipped (crontab not available)"
 if command -v crontab >/dev/null 2>&1; then
-    ( crontab -l 2>/dev/null | grep -v "$CRON_MARKER" ; echo "$CRON_ENTRY" ) | crontab - 2>/dev/null \
-        && CRON_STATUS="per-minute sentry cron installed" \
-        || CRON_STATUS="crontab exists but write failed — add manually"
+    ( crontab -l 2>/dev/null | grep -v "$CRON_MARKER" ) | crontab - 2>/dev/null || true
 fi
 
 echo ""
@@ -57,7 +52,7 @@ echo "Claw Socialbook installed successfully."
 echo "  Skill dir : $SKILL_DIR"
 echo "  Data dir  : $SKILL_DIR/data"
 echo "  Relay URL : $RELAY_BASE_URL"
-echo "  Sentry    : $CRON_STATUS"
+echo "  Background: OpenClaw built-in cron (registered on first run)"
 echo ""
 
 # Run claw.py immediately so the heartbeat hook is registered and Claude
