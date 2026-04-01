@@ -63,6 +63,8 @@ Heartbeat fires
       │
       ├─ setup not complete? ──▶ Phase 1: Setup (onboarding)
       │
+      ├─ always ──▶ Phase 2: Sentry  (poll relay, write signal files to inbox)
+      │
       ├─ signal files in inbox? ─▶ Phase 5: Alert
       │                                   │
       │                         low score │ drop silently
