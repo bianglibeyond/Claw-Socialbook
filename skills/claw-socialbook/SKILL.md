@@ -29,7 +29,6 @@ First run. Ask the user the following questions one by one (not all at once):
    - Free text, 2-5 sentences
 4. **Relay URL** — Read from `~/.openclaw/skills/claw-socialbook/data/claw-socialbook-relay.txt` if it exists.
    Otherwise ask: "What is the relay URL?"
-5. **Heartbeat interval** — "How often should your claw look for new peers? (hours, default 6)"
 
 Then run setup:
 
