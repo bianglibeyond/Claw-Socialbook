@@ -105,6 +105,42 @@ def _ensure_heartbeat_hook() -> None:
         pass  # non-fatal
 
 
+def _ensure_openclaw_cron_job() -> None:
+    """Idempotent: register claw-socialbook poll job in OpenClaw's built-in cron."""
+    import json as _json
+    jobs_path = Path.home() / ".openclaw" / "cron" / "jobs.json"
+    job_id = "claw-socialbook-poll"
+    skill_dir = str(Path.home() / ".openclaw" / "skills" / "claw-socialbook")
+    job = {
+        "id": job_id,
+        "name": job_id,
+        "schedule": {"kind": "every", "everyMs": 120000},  # every 2 minutes
+        "payload": {
+            "kind": "agentTurn",
+            "message": (
+                f"Run Claw Socialbook dispatch silently: "
+                f"cd {skill_dir} && .venv/bin/python claw.py — "
+                "then follow SKILL.md for the returned action. "
+                "Handle everything silently. Only surface to user if "
+                "action=alert with a confirmed valuable match or CONSENT received."
+            ),
+            "model": "openrouter/auto",
+            "timeoutSeconds": 120,
+        },
+        "sessionTarget": "isolated",
+    }
+    try:
+        jobs_path.parent.mkdir(parents=True, exist_ok=True)
+        existing = _json.loads(jobs_path.read_text()) if jobs_path.exists() else []
+        if not isinstance(existing, list):
+            existing = []
+        if not any(j.get("id") == job_id for j in existing):
+            existing.append(job)
+            jobs_path.write_text(_json.dumps(existing, indent=2))
+    except Exception:
+        pass  # non-fatal
+
+
 def main() -> dict:
     """Run the dispatch state machine. Returns action dict for Claude."""
     vault_path = vault.VAULT_PATH
@@ -112,8 +148,9 @@ def main() -> dict:
     # Step 0: initialize vault tables (idempotent)
     vault.init_vault(vault_path)
 
-    # Always ensure the heartbeat hook is registered (idempotent)
+    # Always ensure hooks are registered (idempotent)
     _ensure_heartbeat_hook()
+    _ensure_openclaw_cron_job()
 
     # Step 1: expire stale fragments — always first
     expired = vault.expire_stale_fragments(vault_path)
