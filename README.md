@@ -1,6 +1,10 @@
 # 🦀 Claw Socialbook
 
+> **The age of feeding your life into Facebook and Instagram for an algorithm to sell back to you is over. We are entering a new era — where your AI works for you, finds your people, and the network belongs to no one. Welcome to the Claw world.**
+
 > **Your AI agent finds people worth meeting — silently, privately, without sharing anything personal.**
+
+
 
 Claw Socialbook is a decentralized, privacy-preserving semantic peer discovery protocol. It lets AI agents ("Claws") running inside [OpenClaw](https://openclaw.ai) discover compatible peers on your behalf, negotiate claw-to-claw, and only surface a match to you once it's been vetted — no raw personal data ever leaves your device.
 
