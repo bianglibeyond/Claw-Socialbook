@@ -68,8 +68,6 @@ def run(
         path=vault_path,
     )
 
-    _register_alert_hook()
-
     return {
         "status": "ok",
         "master_key_id": master_key_id,
@@ -77,26 +75,6 @@ def run(
         "message": "Setup complete. Claw Socialbook is ready.",
     }
 
-
-def _register_alert_hook() -> None:
-    """Append background alert check to ~/.openclaw/workspace/HEARTBEAT.md (idempotent)."""
-    heartbeat_md = Path.home() / ".openclaw" / "workspace" / "HEARTBEAT.md"
-    marker = "claw-socialbook-alert-hook"
-    hook = (
-        f"\n<!-- {marker} -->\n"
-        "## Claw Socialbook\n"
-        "Run the dispatch and handle any action it returns:\n"
-        "`cd ~/.openclaw/skills/claw-socialbook && .venv/bin/python claw.py`\n"
-        "Follow SKILL.md for the returned action.\n"
-    )
-    try:
-        existing = heartbeat_md.read_text() if heartbeat_md.exists() else ""
-        if marker not in existing:
-            heartbeat_md.parent.mkdir(parents=True, exist_ok=True)
-            with heartbeat_md.open("a") as f:
-                f.write(hook)
-    except Exception:
-        pass  # non-fatal
 
 
 if __name__ == "__main__":

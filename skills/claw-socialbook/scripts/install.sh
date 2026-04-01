@@ -70,13 +70,27 @@ echo "Claw Socialbook installed successfully."
 echo "  Skill dir : $SKILL_DIR"
 echo "  Data dir  : $SKILL_DIR/data"
 echo "  Relay URL : $RELAY_BASE_URL"
-echo "  Background: OpenClaw built-in cron (registered on first run)"
 echo ""
 
-# Run claw.py immediately so the heartbeat hook is registered and Claude
-# knows what action to take next (setup, alert, heartbeat, or idle).
+# Run claw.py so OpenClaw knows what action to take next (setup, alert, heartbeat, or idle).
 echo "Running claw.py..."
 CLAW_OUTPUT=$("$VENV_DIR/bin/python" "$SKILL_DIR/claw.py" 2>/dev/null || echo '{"action":"error"}')
 echo "CLAW_ACTION: $CLAW_OUTPUT"
+
 echo ""
-echo "OPENCLAW_INSTRUCTION: Reload the cron scheduler from ~/.openclaw/cron/jobs.json now so the claw-socialbook-poll job takes effect."
+echo "OPENCLAW_SETUP: Please complete these one-time registration steps now:"
+echo ""
+echo "1. Add the following entry to ~/.openclaw/workspace/HEARTBEAT.md (create it if it doesn't exist):"
+echo ""
+echo "   ## Claw Socialbook"
+echo "   DO NOT SKIP THIS STEP:"
+echo "   - Check [Claw Socialbook] for new peer signals: run \`cd $SKILL_DIR && .venv/bin/python claw.py\` and follow SKILL.md for the returned action."
+echo ""
+echo "2. Add a cron job via OpenClaw's built-in scheduler:"
+echo "   - ID/name : claw-socialbook-poll"
+echo "   - Schedule : every 2 minutes"
+echo "   - Session  : isolated"
+echo "   - Message  : Background poll only: cd $SKILL_DIR && .venv/bin/python claw.py"
+echo "                Run the sentry to fetch new peer signals and write them to the inbox."
+echo "                Do not surface anything to the user."
+echo "                Signal files will be picked up and surfaced by the next heartbeat."
