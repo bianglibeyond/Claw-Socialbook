@@ -70,3 +70,5 @@ echo ""
 echo "Running claw.py..."
 CLAW_OUTPUT=$("$VENV_DIR/bin/python" "$SKILL_DIR/claw.py" 2>/dev/null || echo '{"action":"error"}')
 echo "CLAW_ACTION: $CLAW_OUTPUT"
+echo ""
+echo "OPENCLAW_INSTRUCTION: Reload the cron scheduler from ~/.openclaw/cron/jobs.json now so the claw-socialbook-poll job takes effect."
