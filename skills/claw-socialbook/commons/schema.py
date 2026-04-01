@@ -109,7 +109,7 @@ class Fragment(BaseModel):
 
     # Timeline
     creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    ttl_hours: int = 24 # How long should the Relay keep this?
+    ttl_hours: int = 72 # How long should the Relay keep this?
 
     # Match History
     did_match_history: List[Match] = Field(default_factory=list)

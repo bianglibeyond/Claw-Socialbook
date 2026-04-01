@@ -104,7 +104,7 @@ def run(
     eph_pub_b64 = base64.urlsafe_b64encode(eph_pub).rstrip(b"=").decode()
 
     published_at = datetime.now(timezone.utc)
-    expires_at = published_at + timedelta(hours=24)
+    expires_at = published_at + timedelta(hours=72)
 
     vault.store_fragment(
         {
