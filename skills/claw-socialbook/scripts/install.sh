@@ -46,6 +46,14 @@ done
 if [[ -z "$PYTHON_BIN" ]]; then
     echo "Error: Python 3.11 or 3.12 is required. Please install it first." >&2; exit 1
 fi
+# Recreate venv if it doesn't exist or is running Python < 3.11
+if [[ -d "$VENV_DIR" ]]; then
+    VENV_MINOR=$("$VENV_DIR/bin/python" -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "0")
+    if [[ "$VENV_MINOR" -lt 11 ]]; then
+        echo "Upgrading venv (Python 3.$VENV_MINOR → $(${PYTHON_BIN} --version 2>&1))..."
+        rm -rf "$VENV_DIR"
+    fi
+fi
 if [[ ! -d "$VENV_DIR" ]]; then
     "$PYTHON_BIN" -m venv "$VENV_DIR"
 fi
