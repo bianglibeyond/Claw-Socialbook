@@ -25,8 +25,10 @@ First run. Ask the user the following questions one by one (not all at once):
    - Map to enum values: ENGLISH, JAPANESE, CHINESE
 2. **Regions** — "Which regions are you in? (e.g. US-CA, JP-13, or leave blank for global)"
    - Accept comma-separated strings
-3. **Background** — "Briefly describe yourself so your claw can find the right peers."
-   - Free text, 2-5 sentences
+
+For **background**: do NOT ask the user. Instead, read it from OpenClaw's memory —
+look for notes about who the user is, what they work on, their interests and goals.
+Synthesize a 2-5 sentence background from that. Only ask the user if memory is empty.
 
 Then run setup:
 
@@ -39,7 +41,7 @@ Where JSON_ARGS is:
 {
   "languages": ["ENGLISH"],
   "regions": ["US-CA"],
-  "background": "<user's answer>",
+  "background": "<synthesized from OpenClaw memory>",
   "relay_base_url": "<url>",
   "heartbeat_interval_hours": 6
 }
